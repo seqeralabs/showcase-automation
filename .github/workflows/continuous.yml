@@ -52,7 +52,6 @@ jobs:
 
             - uses: actions/upload-artifact@v3
               if: success() || failure()
-              needs: runtest
               with:
                 name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env }}_log
                 path: tower_action_*.log
