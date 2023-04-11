@@ -19,7 +19,7 @@ jobs:
             date: ${{ steps.date.outputs.date }}
 
     run-test:
-        runs-on: ubuntu-lates
+        runs-on: ubuntu-latest
         name: run.${{ matrix.pipeline.name }}.${{ matrix.compute_env }}
         strategy:
             matrix:
