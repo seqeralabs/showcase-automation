@@ -37,6 +37,8 @@ jobs:
                       workdir: TOWER_BUCKET_AZURE
                     - compute_env: TOWER_CE_GCP_CPU
                       workdir: TOWER_BUCKET_GCP
+                exclude:
+                    - compute_env: [TOWER_CE_AZURE_CPU, TOWER_CE_GCP_CPU]
         steps:
             - uses: adamrtalbot/action-tower-launch@4b50048a3bb0c57cff8a5e9b29e6035ea1f58074
               with:
