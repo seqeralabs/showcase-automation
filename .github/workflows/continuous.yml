@@ -43,6 +43,7 @@ jobs:
                 compute_env: ${{ secrets[matrix.compute_env] }}
                 workdir: "${{ secrets[matrix.workdir] }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
                 run_name: "${{ matrix.pipeline.name }}_${{ matrix.compute_env }}"
+                revision: "${{ matrix.pipeline.rev }}"
                 profiles: test
                 wait: SUBMITTED
                 parameters: |
