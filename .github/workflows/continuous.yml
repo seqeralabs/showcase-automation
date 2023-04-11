@@ -3,8 +3,8 @@ run-name: Submit workflow for periodic testing
 on: 
     workflow_dispatch:
     schedule:
-    # Every Monday at 2am
-    - cron: '0 2 * * 1'
+    # Every Wednesday at 2am
+    - cron: '0 2 * * 3'
 
 
 jobs:
