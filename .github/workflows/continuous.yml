@@ -57,6 +57,7 @@ jobs:
 
             - uses: actions/upload-artifact@v3
               if: always()
+              needs: [ run-test ]
               with:
                 name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env }}_log
                 path: tower_action_*.log
