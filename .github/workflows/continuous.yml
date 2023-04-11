@@ -1,0 +1,53 @@
+name: Continuous tests for running the pipelines on cloud
+run-name: Submit workflow for periodic testing
+on: 
+    workflow_dispatch:
+    schedule:
+    # Every Monday at 2am
+    - cron: '0 2 * * 1'
+
+
+jobs:
+    getdate:
+        runs-on: ubuntu-latest
+        steps:
+            - name: "Get current date"
+              run: |
+                echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+              id: date
+        outputs:
+            date: ${{ steps.date.outputs.date }}
+
+    run-test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                pipeline:
+                    - rnaseq
+                    - sarek
+                include:
+                    - compute_env: ${{ secrets.TOWER_CE_AWS_CPU }}
+                      workdir: ${{ secrets.TOWER_BUCKET_AWS }}
+                    - compute_env: ${{ secrets.TOWER_CE_AZURE_CPU }}
+                      workdir: ${{ secrets.TOWER_BUCKET_AZURE }}
+                    - compute_env: ${{ secrets.TOWER_CE_GCP_CPU }}
+                      workdir: ${{ secrets.TOWER_BUCKET_GCP }}
+        steps:
+            - uses: seqeralabs/action-tower-launch@v1
+              with:
+                workspace_id: ${{ secrets.TOWER_WORKSPACE_ID }}
+                access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
+                compute_env: ${{ matrix.compute_env }}
+                workdir: "${{ matrix.workdir }}/work/${{ matrix.pipeline }}/work-${{ needs.getdate.outputs.date }}"
+                run_name: "${{ matrix.pipeline }}_${{ matrix.compute_env }}"
+                profiles: test
+                parameters: |
+                    {
+                        "outdir": "${{ secrets.TOWER_BUCKET_AWS }}/${{ matrix.pipeline }}/results-test-${{ needs.getdate.outputs.date }}"
+                    }
+
+            - uses: actions/upload-artifact@v3
+              with:
+                name: Tower debug log file
+                path: tower_action_*.log
+
