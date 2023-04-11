@@ -23,8 +23,8 @@ jobs:
         strategy:
             matrix:
                 pipeline:
-                    - rnaseq
-                    - sarek
+                    - { name: rnaseq, url: nf-core/rnaseq, org: nf-core, rev: master, latest: true }
+                    - { name: sarek, url: nf-core/sarek, org: nf-core, rev: master, latest: true }
                 compute_env:
                     - TOWER_CE_AWS_CPU
                     - TOWER_CE_AZURE_CPU
@@ -39,15 +39,16 @@ jobs:
         steps:
             - uses: seqeralabs/action-tower-launch@v1
               with:
+                pipeline: ${{ matrix.pipeline.url }}
                 workspace_id: ${{ secrets.TOWER_WORKSPACE_ID }}
                 access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
                 compute_env: ${{ secrets[matrix.compute_env] }}
-                workdir: "${{ secrets[matrix.workdir] }}/work/${{ matrix.pipeline }}/work-${{ needs.getdate.outputs.date }}"
+                workdir: "${{ secrets[matrix.workdir] }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
                 run_name: "${{ matrix.pipeline }}_${{ matrix.compute_env }}"
                 profiles: test
                 parameters: |
                     {
-                        "outdir": "${{ matrix[secrets.workdir] }}/${{ matrix.pipeline }}/results-test-${{ needs.getdate.outputs.date }}"
+                        "outdir": "${{ matrix[secrets.workdir] }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
                     }
 
             - uses: actions/upload-artifact@v3
