@@ -18,9 +18,9 @@ jobs:
         outputs:
             date: ${{ steps.date.outputs.date }}
 
-    run-test:
+    runtest:
         runs-on: ubuntu-latest
-        name: run.${{ matrix.pipeline.name }}.${{ matrix.compute_env }}
+        name: ${{ matrix.pipeline.name }}.${{ matrix.compute_env }}
         needs: getdate
         continue-on-error: true
         strategy:
@@ -52,7 +52,7 @@ jobs:
 
             - uses: actions/upload-artifact@v3
               if: success() || failure()
-              needs: [ run-test ]
+              needs: runtest
               with:
                 name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env }}_log
                 path: tower_action_*.log
