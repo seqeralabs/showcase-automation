@@ -55,6 +55,6 @@ jobs:
 
             - uses: actions/upload-artifact@v3
               with:
-                name: ${{ matrix.pipeline }}_${{ matrix.compute_env }}_log
+                name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env }}_log
                 path: tower_action_*.log
 
