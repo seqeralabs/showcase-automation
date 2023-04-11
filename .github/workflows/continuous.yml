@@ -19,7 +19,8 @@ jobs:
             date: ${{ steps.date.outputs.date }}
 
     run-test:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-lates
+        name: run.${{ matrix.pipeline.name }}.${{ matrix.compute_env }}
         strategy:
             matrix:
                 pipeline:
@@ -38,7 +39,6 @@ jobs:
                       workdir: TOWER_BUCKET_GCP
         steps:
             - uses: seqeralabs/action-tower-launch@v1
-              name: run.${{ matrix.pipeline.name }}.${{ matrix.compute_env }}
               with:
                 pipeline: ${{ matrix.pipeline.url }}
                 workspace_id: ${{ secrets.TOWER_WORKSPACE_ID }}
