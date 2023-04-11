@@ -33,6 +33,7 @@ jobs:
                 include:
                     - compute_env: TOWER_CE_AWS_CPU
                       workdir: TOWER_BUCKET_AWS
+                    # To add more compute envs add both compute_env and workdir here. These should be secrets and retrieved in the same manner.
                       
         steps:
             - uses: adamrtalbot/action-tower-launch@4b50048a3bb0c57cff8a5e9b29e6035ea1f58074
