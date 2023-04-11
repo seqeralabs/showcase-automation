@@ -24,8 +24,8 @@ jobs:
         strategy:
             matrix:
                 pipeline:
-                    - { name: rnaseq, url: https://github.com/nf-core/rnaseq, org: nf-core, rev: master, latest: true }
-                    - { name: sarek, url: https://github.com/nf-core/sarek, org: nf-core, rev: master, latest: true }
+                    - { name: rnaseq, url: nf-core/rnaseq, org: nf-core, rev: master, latest: true }
+                    - { name: sarek, url: nf-core/sarek, org: nf-core, rev: master, latest: true }
                 compute_env:
                     - TOWER_CE_AWS_CPU
                     - TOWER_CE_AZURE_CPU
