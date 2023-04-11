@@ -25,6 +25,10 @@ jobs:
                 pipeline:
                     - rnaseq
                     - sarek
+                compute_env:
+                    - TOWER_CE_AWS_CPU
+                    - TOWER_CE_AZURE_CPU
+                    - TOWER_CE_GCP_CPU
                 include:
                     - compute_env: TOWER_CE_AWS_CPU
                       workdir: TOWER_BUCKET_AWS
