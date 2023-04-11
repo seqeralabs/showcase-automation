@@ -26,24 +26,24 @@ jobs:
                     - rnaseq
                     - sarek
                 include:
-                    - compute_env: ${{ secrets.TOWER_CE_AWS_CPU }}
-                      workdir: ${{ secrets.TOWER_BUCKET_AWS }}
-                    - compute_env: ${{ secrets.TOWER_CE_AZURE_CPU }}
-                      workdir: ${{ secrets.TOWER_BUCKET_AZURE }}
-                    - compute_env: ${{ secrets.TOWER_CE_GCP_CPU }}
-                      workdir: ${{ secrets.TOWER_BUCKET_GCP }}
+                    - compute_env: TOWER_CE_AWS_CPU
+                      workdir: TOWER_BUCKET_AWS
+                    - compute_env: TOWER_CE_AZURE_CPU
+                      workdir: TOWER_BUCKET_AZURE
+                    - compute_env: TOWER_CE_GCP_CPU
+                      workdir: TOWER_BUCKET_GCP
         steps:
             - uses: seqeralabs/action-tower-launch@v1
               with:
                 workspace_id: ${{ secrets.TOWER_WORKSPACE_ID }}
                 access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
-                compute_env: ${{ matrix.compute_env }}
-                workdir: "${{ matrix.workdir }}/work/${{ matrix.pipeline }}/work-${{ needs.getdate.outputs.date }}"
+                compute_env: ${{ secrets[matrix.compute_env] }}
+                workdir: "${{ secrets[matrix.workdir] }}/work/${{ matrix.pipeline }}/work-${{ needs.getdate.outputs.date }}"
                 run_name: "${{ matrix.pipeline }}_${{ matrix.compute_env }}"
                 profiles: test
                 parameters: |
                     {
-                        "outdir": "${{ secrets.TOWER_BUCKET_AWS }}/${{ matrix.pipeline }}/results-test-${{ needs.getdate.outputs.date }}"
+                        "outdir": "${{ matrix[secrets.workdir] }}/${{ matrix.pipeline }}/results-test-${{ needs.getdate.outputs.date }}"
                     }
 
             - uses: actions/upload-artifact@v3
