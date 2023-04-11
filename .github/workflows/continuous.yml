@@ -38,7 +38,7 @@ jobs:
                       workdir: TOWER_BUCKET_GCP
         steps:
             - uses: seqeralabs/action-tower-launch@v1
-              name: ${{ matrix.pipeline.name }}.${{ matrix.compute_env }}
+              name: run.${{ matrix.pipeline.name }}.${{ matrix.compute_env }}
               with:
                 pipeline: ${{ matrix.pipeline.url }}
                 workspace_id: ${{ secrets.TOWER_WORKSPACE_ID }}
