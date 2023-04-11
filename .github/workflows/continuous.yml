@@ -38,7 +38,7 @@ jobs:
                     - compute_env: TOWER_CE_GCP_CPU
                       workdir: TOWER_BUCKET_GCP
         steps:
-            - uses: seqeralabs/action-tower-launch@v1
+            - uses: adamrtalbot/action-tower-launch@4b50048a3bb0c57cff8a5e9b29e6035ea1f58074
               with:
                 pipeline: ${{ matrix.pipeline.url }}
                 workspace_id: ${{ secrets.TOWER_WORKSPACE_ID }}
