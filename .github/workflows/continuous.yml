@@ -47,6 +47,7 @@ jobs:
                 workdir: "${{ secrets[matrix.workdir] }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
                 run_name: "${{ matrix.pipeline }}_${{ matrix.compute_env }}"
                 profiles: test
+                wait: SUBMITTED
                 parameters: |
                     {
                         "outdir": "${{ matrix[secrets.workdir] }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
