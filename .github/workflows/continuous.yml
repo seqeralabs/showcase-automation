@@ -1,4 +1,4 @@
-name: Continuous tests for running the pipelines on cloud
+name: showcase-autotest
 run-name: Submit workflow for periodic testing
 on: 
     workflow_dispatch:
