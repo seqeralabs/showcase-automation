@@ -39,7 +39,7 @@ jobs:
                 access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
                 compute_env: ${{ secrets[matrix.compute_env.ref] }}
                 workdir: "${{ secrets[matrix.compute_env.workdir] }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
-                run_name: "${{ needs.getdate.outputs.date }}.${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}"
+                run_name: "${{ matrix.pipeline.name }}_${{ needs.getdate.outputs.date }}_${{ matrix.compute_env.name }}"
                 revision: "${{ matrix.pipeline.rev }}"
                 profiles: test
                 wait: SUBMITTED
