@@ -20,7 +20,7 @@ jobs:
 
     runtest:
         runs-on: ubuntu-latest
-        name: ${{ matrix.pipeline.name }}.${{ matrix.compute_env,name }}
+        name: ${{ matrix.pipeline.name }}.${{ matrix.compute_env.name }}
         needs: getdate
         continue-on-error: true
         strategy:
