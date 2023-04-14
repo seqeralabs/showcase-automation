@@ -4,7 +4,7 @@ on:
     workflow_dispatch:
     schedule:
     # Every day at 2am
-    - cron: '0 * * * 3'
+    - cron: '0 2 * * 1'
 
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
                     - { name: gcp, ref: seqera_gcp_london, workdir: "gs://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
                 include:  
                     - compute_env: { name: aws, ref: seqera_aws_ireland_fusionv2_nvme, workdir: "s3://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
-                      pipeline: { name: sentieon, url: nf-sentieon, rev: "master", latest: true, profiles: ["test"] }
+                      pipeline: { name: sentieon, url: nf-sentieon, rev: "master", latest: true, profiles: "test" }
         steps:
             - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
               with:
