@@ -27,6 +27,8 @@ jobs:
             matrix:
                 pipeline:
                     - { name: hello, url: hello, rev: master, latest: true }
+                    - { name: rnaseq, url: nf-core-rnaseq, rev: '3.11.1', latest: true }
+                    - { name: sarek, url: nf-core-viralrecon-illumina, rev: '2.6.0', latest: true }
                 compute_env:
                    - { name: scidev_testing_aws, ref: TOWER_CE_AWS_CPU, workdir: TOWER_BUCKET_AWS, workspace_id: TOWER_WORKSPACE_ID }
                    - { name: scidev_aws_aws, ref: SCIDEV_CE_AWS_CPU, workdir: SCIDEV_BUCKET_AWS, workspace_id: SCIDEV_AWS_WORKSPACE_ID }
