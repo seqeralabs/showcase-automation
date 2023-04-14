@@ -26,9 +26,9 @@ jobs:
         strategy:
             matrix:
                 pipeline:
-                    - { name: hello, url: hello, rev: master, latest: true }
-                    - { name: rnaseq, url: nf-core-rnaseq, rev: '3.11.1', latest: true }
-                    - { name: viralrecon, url: nf-core-viralrecon-illumina, rev: '2.6.0', latest: true }
+                    - { name: hello, url: hello, rev: master, latest: true, profiles: [] }
+                    - { name: rnaseq, url: nf-core-rnaseq, rev: '3.11.1', latest: true, profiles: ["test"] }
+                    - { name: viralrecon, url: nf-core-viralrecon-illumina, rev: '2.6.0', latest: true, profiles: ["test"] }
                 compute_env:
                     - { name: aws, ref: seqera_aws_ireland_fusionv2_nvme, workdir: "s3://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
                     - { name: azure, ref: seqera_azure_virginia, workdir: "az://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
@@ -44,7 +44,7 @@ jobs:
                 workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
                 run_name: "${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}"
                 revision: "${{ matrix.pipeline.rev }}"
-                profiles: test
+                profiles: ${{ matrix.pipeline.profiles }}
                 wait: SUBMITTED
                 parameters: |
                     {
