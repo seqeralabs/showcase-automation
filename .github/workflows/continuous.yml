@@ -40,15 +40,15 @@ jobs:
                 pipeline: ${{ matrix.pipeline.url }}
                 workspace_id: ${{ secrets[matrix.compute_env.workspace_id] }}
                 access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
-                compute_env: ${{ secrets[matrix.compute_env.ref] }}
-                workdir: "${{ secrets[matrix.compute_env.workdir] }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
-                run_name: "${{ matrix.pipeline.name }}_${{ needs.getdate.outputs.date }}_${{ matrix.compute_env.name }}"
+                compute_env: ${{ matrix.compute_env.ref }}
+                workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
+                run_name: "${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}"
                 revision: "${{ matrix.pipeline.rev }}"
                 profiles: test
                 wait: SUBMITTED
                 parameters: |
                     {
-                        "outdir": "${{ matrix[secrets.workdir] }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}",
+                        "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}",
                         "hook_url": "${{ secrets.SLACK_HOOK_URL }}"
                     }
 
