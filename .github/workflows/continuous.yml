@@ -30,9 +30,9 @@ jobs:
                     - { name: rnaseq, url: nf-core-rnaseq, rev: '3.11.1', latest: true }
                     - { name: sarek, url: nf-core-viralrecon-illumina, rev: '2.6.0', latest: true }
                 compute_env:
-                   - { name: aws, ref: seqera_aws_ireland_fusionv2_nvme_gpu, workdir: "s3://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
-                   - { name: scidev_testing_aws, ref: TOWER_CE_AWS_CPU, workdir: TOWER_BUCKET_AWS, workspace_id: TOWER_WORKSPACE_ID }
-                   - { name: scidev_aws_aws, ref: SCIDEV_CE_AWS_CPU, workdir: SCIDEV_BUCKET_AWS, workspace_id: SCIDEV_AWS_WORKSPACE_ID }
+                    - { name: aws, ref: seqera_aws_ireland_fusionv2_nvme_gpu, workdir: "s3://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
+                    - { name: scidev_testing_aws, ref: TOWER_CE_AWS_CPU, workdir: TOWER_BUCKET_AWS, workspace_id: TOWER_WORKSPACE_ID }
+                    - { name: scidev_aws_aws, ref: SCIDEV_CE_AWS_CPU, workdir: SCIDEV_BUCKET_AWS, workspace_id: SCIDEV_AWS_WORKSPACE_ID }
                       
         steps:
             - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
