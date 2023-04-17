@@ -41,9 +41,9 @@ jobs:
                       pipeline: { name: sentieon, url: nf-sentieon, rev: "master", latest: true, profiles: "test" }
         steps:
             - name: "export run name"
-                run: |
-                    echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}" >> $GITHUB_OUTPUT
-                id: id
+              run: |
+                  echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}" >> $GITHUB_OUTPUT
+              id: id
 
             - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
               with:
