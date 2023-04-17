@@ -41,20 +41,20 @@ jobs:
               name: aws,
               ref: seqera_aws_ireland_fusionv2_nvme,
               workdir: "s3://seqeralabs-showcase",
-              workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID,
+              workspace_id: "138659136604200",
             }
           - {
               name: azure,
               ref: seqera_azure_virginia,
               workdir: "az://seqeralabs-showcase",
-              workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID,
+              workspace_id: "138659136604200",
             }
 
     steps:
       - name: "export run name"
         run: |
           echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}" >> $GITHUB_OUTPUT
-          echo "workspace=${{ secrets[matrix.compute_env.workspace_id] }}" >> $GITHUB_OUTPUT
+          echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
         id: id
 
       - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
