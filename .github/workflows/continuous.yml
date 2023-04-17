@@ -73,13 +73,12 @@ jobs:
           name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_log
           path: tower_action_*.log
 
-    checkrun:
-      runs-on: ubuntu-latest
-      needs: runtest
-      continue-on-error: true
-      environment: delay
-
-      steps:
-        - name: "Echo run name after 2 mins"
-          run: |
-            echo ${{ needs.runtest.outputs.runname }}
+  checkrun:
+    runs-on: ubuntu-latest
+    needs: runtest
+    continue-on-error: true
+    environment: delay
+    steps:
+    - name: "Echo run name after 2 mins"
+        run: |
+        echo ${{ needs.runtest.outputs.runname }}
