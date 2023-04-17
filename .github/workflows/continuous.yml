@@ -79,6 +79,6 @@ jobs:
     continue-on-error: true
     environment: delay
     steps:
-    - name: "Echo run name after 2 mins"
+      - name: "Echo run name after 2 mins"
         run: |
-        echo ${{ needs.runtest.outputs.runname }}
+          echo ${{ needs.runtest.outputs.runname }}
