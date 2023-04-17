@@ -42,6 +42,12 @@ jobs:
               workdir: "s3://seqeralabs-showcase",
               workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID,
             }
+          - {
+              name: azure,
+              ref: seqera_azure_virginia,
+              workdir: "az://seqeralabs-showcase",
+              workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID,
+            }
 
     steps:
       - name: "export run name"
