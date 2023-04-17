@@ -31,6 +31,7 @@ jobs:
     continue-on-error: true
     outputs:
       runname: ${{ steps.id.outputs.name }}
+      workspace: ${{ steps.id.outputs.workspace }}
     strategy:
       matrix:
         pipeline:
@@ -53,13 +54,14 @@ jobs:
       - name: "export run name"
         run: |
           echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}" >> $GITHUB_OUTPUT
+          echo "workspace=${{ secrets[matrix.compute_env.workspace_id] }}" >> $GITHUB_OUTPUT
         id: id
 
       - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
         if: ${{ !inputs.dryrun }}
         with:
           pipeline: ${{ matrix.pipeline.url }}
-          workspace_id: ${{ secrets[matrix.compute_env.workspace_id] }}
+          workspace_id: ${{ steps.id.outputs.workspace }}
           access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
           compute_env: ${{ matrix.compute_env.ref }}
           workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
@@ -88,3 +90,15 @@ jobs:
       - name: "Echo run name after 2 mins"
         run: |
           echo ${{ needs.runtest.outputs.runname }}
+
+      - name: Install tw CLI
+        run: |
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.7.3/tw-0.7.3-linux-x86_64
+          mv tw-* tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/
+
+      - name:
+        run: |
+          export ID=$(tw -o json runs list --workspace ${{ needs.runtest.outputs.workspace }} --filter ${{ needs.runtest.outputs.runname }} | jq -r '.workflows[].workflow.id')
+          tw -o json runs view -w ${{ needs.runtest.outputs.workspace }} -i $ID
