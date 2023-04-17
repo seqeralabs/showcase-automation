@@ -1,5 +1,5 @@
 name: showcase-autotest
-run-name: Submit workflow for periodic testing
+run-name: run-pipelines
 on: 
     workflow_dispatch:
     schedule:
@@ -23,21 +23,28 @@ jobs:
         name: ${{ matrix.pipeline.name }}.${{ matrix.compute_env.name }}
         needs: getdate
         continue-on-error: true
+        outputs:
+            date: ${{ steps.id.outputs.date }}
         strategy:
             matrix:
                 pipeline:
                     - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
-                    - { name: rnaseq, url: nf-core-rnaseq, rev: '3.11.1', latest: true, profiles: "test" }
-                    - { name: viralrecon, url: nf-core-viralrecon-illumina, rev: '2.6.0', latest: true, profiles: "test" }
-                    - { name: sarek, url: nf-core-sarek, rev: "3.1.2", latest: true, profiles: "test" }
+                    # - { name: rnaseq, url: nf-core-rnaseq, rev: '3.11.1', latest: true, profiles: "test" }
+                    # - { name: viralrecon, url: nf-core-viralrecon-illumina, rev: '2.6.0', latest: true, profiles: "test" }
+                    # - { name: sarek, url: nf-core-sarek, rev: "3.1.2", latest: true, profiles: "test" }
                 compute_env:
                     - { name: aws, ref: seqera_aws_ireland_fusionv2_nvme, workdir: "s3://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
-                    - { name: azure, ref: seqera_azure_virginia, workdir: "az://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
-                    - { name: gcp, ref: seqera_gcp_london, workdir: "gs://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
+                    # - { name: azure, ref: seqera_azure_virginia, workdir: "az://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
+                    # - { name: gcp, ref: seqera_gcp_london, workdir: "gs://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
                 include:  
                     - compute_env: { name: aws, ref: seqera_aws_ireland_fusionv2_nvme, workdir: "s3://seqeralabs-showcase", workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID }
                       pipeline: { name: sentieon, url: nf-sentieon, rev: "master", latest: true, profiles: "test" }
         steps:
+            - name: "export run name"
+                run: |
+                    echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}" >> $GITHUB_OUTPUT
+                id: id
+
             - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
               with:
                 pipeline: ${{ matrix.pipeline.url }}
@@ -45,7 +52,7 @@ jobs:
                 access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
                 compute_env: ${{ matrix.compute_env.ref }}
                 workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
-                run_name: "${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}"
+                run_name: "${{ steps.id.outputs.name }}"
                 revision: "${{ matrix.pipeline.rev }}"
                 profiles: ${{ matrix.pipeline.profiles }}
                 wait: SUBMITTED
@@ -60,4 +67,3 @@ jobs:
               with:
                 name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_log
                 path: tower_action_*.log
-
