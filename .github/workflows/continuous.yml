@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       dryrun:
-        description: "Submit to Tower or not"
+        description: "Dryrun (do not submit pipeline to Tower"
         default: false
         type: boolean
         required: false
