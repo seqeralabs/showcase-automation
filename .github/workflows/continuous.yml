@@ -134,8 +134,7 @@ jobs:
           sudo mv tw /usr/local/bin/
 
       - name:
-        if: ${{ !inputs.dryrun }}
         run: |
-          export ID=$(tw -o json runs list --workspace ${{ needs.runtest.outputs.workspace }} --filter ${{ needs.runtest.outputs.runname }} | jq -r '.workflows[].workflow.id')
+          export ID=$(tw -o json runs list --workspace ${{ matrix.workspace }} --filter ${{ matrix.name }} | jq -r '.workflows[].workflow.id')
           echo "Run ID: $ID"
-          tw -o json runs view -w ${{ needs.runtest.outputs.workspace }} -i $ID
+          tw -o json runs view -w ${{ matrix.workspace }} -i $ID
