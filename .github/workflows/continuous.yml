@@ -104,10 +104,8 @@ jobs:
           name: ${{ needs.getdate.outputs.date }}_run_details
           path: run_details
 
-      - name: "Echo run name after 2 mins"
+      - name: "stage matrix"
         run: |
-          ls -lh run_details
-          cat run_details/*
           echo "matrix=$(cat run_details/* | jq -c --slurp .)" >> $GITHUB_OUTPUT
         id: matrix
 
@@ -127,17 +125,6 @@ jobs:
       - name: "print names"
         run: |
           echo "${{ matrix }}"
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.getdate.outputs.date }}_run_details
-          path: run_details
-
-      - name: "Echo run name after 2 mins"
-        run: |
-          ls -lh run_details
-          cat run_details/*
-          cat run_details/* | jq -c --slurp .
 
       - name: Install tw CLI
         run: |
