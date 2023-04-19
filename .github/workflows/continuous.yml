@@ -78,14 +78,13 @@ jobs:
       - name: "store run name"
         if: success()
         run: |
-          echo JSON=$('{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}" }') 
-          echo $JSON >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
+          JSON=$('{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}" }') >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
           name: ${{ needs.getdate.outputs.date }}_run_details
-          path: ${{ needs.getdate.outputs.date }}.json
+          path: "${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json"
 
       - uses: actions/upload-artifact@v3
         if: success() || failure()
