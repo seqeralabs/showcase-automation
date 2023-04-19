@@ -75,6 +75,17 @@ jobs:
                 "hook_url": "${{ secrets.SLACK_HOOK_URL }}"
             }
 
+      - name: "store run name"
+        if: success()
+        run: |
+          echo "{ "name": ${{ steps.id.outputs.name }}, "workspace": ${{ steps.id.outputs.workspace }} } >> ${{ needs.getdate.outputs.date }}.json
+
+      - uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: ${{ needs.getdate.outputs.date }}_run_details
+          path: ${{ needs.getdate.outputs.date }}.json
+
       - uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
@@ -91,9 +102,14 @@ jobs:
       TOWER_WORKSPACE_ID: ${{ needs.runtest.outputs.workspace }}
 
     steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_run_details
+          path: ${{ needs.getdate.outputs.date }}.json
+
       - name: "Echo run name after 2 mins"
         run: |
-          echo ${{ needs.runtest.outputs.runname }}
+          cat ${{ needs.runtest.outputs.runname }}.json
 
       - name: Install tw CLI
         run: |
@@ -105,4 +121,5 @@ jobs:
       - name:
         run: |
           export ID=$(tw -o json runs list --workspace ${{ needs.runtest.outputs.workspace }} --filter ${{ needs.runtest.outputs.runname }} | jq -r '.workflows[].workflow.id')
+          echo "Run ID: $ID"
           tw -o json runs view -w ${{ needs.runtest.outputs.workspace }} -i $ID
