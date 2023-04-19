@@ -138,4 +138,4 @@ jobs:
         run: |
           export ID=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }} | jq -r '.workflows[].workflow.id')
           echo "Run ID: $ID"
-          tw -o json runs view -w ${{ matrix.workspace }} -i $ID
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i $ID
