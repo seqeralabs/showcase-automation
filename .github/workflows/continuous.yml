@@ -94,7 +94,7 @@ jobs:
 
   checkrun:
     runs-on: ubuntu-latest
-    needs: runtest
+    needs: [runtest, getdate]
     continue-on-error: true
     environment: delay
     env:
