@@ -105,11 +105,13 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_run_details
-          path: ${{ needs.getdate.outputs.date }}.json
+          path: run_details
 
       - name: "Echo run name after 2 mins"
         run: |
-          cat ${{ needs.getdate.outputs.date }}.json
+          ls -lh run_details
+          cat run_details/*
+          cat run_details/* | jq -c --slurp .
 
       - name: Install tw CLI
         run: |
