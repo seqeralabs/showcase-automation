@@ -78,7 +78,8 @@ jobs:
       - name: "store run name"
         if: success()
         run: |
-          echo '{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}" }' >> ${{ needs.getdate.outputs.date }}.json
+          echo JSON=$('{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}" }') 
+          echo $JSON >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         if: success() || failure()
