@@ -92,16 +92,41 @@ jobs:
           name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_log
           path: tower_action_*.log
 
-  checkrun:
+  checkmatrix:
     runs-on: ubuntu-latest
     needs: [runtest, getdate]
+    continue-on-error: true
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_run_details
+          path: run_details
+
+      - name: "Echo run name after 2 mins"
+        run: |
+          ls -lh run_details
+          cat run_details/*
+          echo "matrix=$(cat run_details/* | jq -c --slurp .)" >> $GITHUB_OUTPUT
+        id: matrix
+
+  checkrun:
+    runs-on: ubuntu-latest
+    needs: [checkmatrix]
     continue-on-error: true
     environment: delay
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ needs.runtest.outputs.workspace }}
+    strategy:
+      includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
 
     steps:
+      - name: "print names"
+        run: |
+          echo "${{ matrix }}"
+
       - uses: actions/download-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_run_details
@@ -121,6 +146,7 @@ jobs:
           sudo mv tw /usr/local/bin/
 
       - name:
+        if: ${{ !inputs.dryrun }}
         run: |
           export ID=$(tw -o json runs list --workspace ${{ needs.runtest.outputs.workspace }} --filter ${{ needs.runtest.outputs.runname }} | jq -r '.workflows[].workflow.id')
           echo "Run ID: $ID"
