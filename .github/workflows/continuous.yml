@@ -138,4 +138,22 @@ jobs:
         run: |
           export ID=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }} | jq -r '.workflows[].workflow.id')
           echo "Run ID: $ID"
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i $ID
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i $ID >> ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_all_runs
+          path: "${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json"
+
+  sendapicall:
+    runs-on: ubuntu-latest
+    needs: [checkrun]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_all_runs
+          path: runs
+
+      - name: "stage matrix"
+        run: |
+          cat runs/* | jq -c --slurp .
