@@ -120,7 +120,8 @@ jobs:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ needs.runtest.outputs.workspace }}
     strategy:
-      includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
+      matrix:
+        includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
 
     steps:
       - name: "print names"
