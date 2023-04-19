@@ -124,9 +124,10 @@ jobs:
     steps:
       - name: "print names"
         run: |
-          echo "${{ matrix }}"
+          echo "${{ toJSON(matrix) }}"
 
       - name: Install tw CLI
+        if: ${{ !inputs.dryrun }}
         run: |
           wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.7.3/tw-0.7.3-linux-x86_64
           mv tw-* tw
