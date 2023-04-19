@@ -111,7 +111,7 @@ jobs:
 
   checkrun:
     runs-on: ubuntu-latest
-    needs: [checkmatrix]
+    needs: [getdate, checkmatrix]
     continue-on-error: true
     environment: delay
     env:
@@ -145,9 +145,9 @@ jobs:
           name: ${{ needs.getdate.outputs.date }}_all_runs
           path: "${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json"
 
-  sendapicall:
+  slack:
     runs-on: ubuntu-latest
-    needs: [checkrun]
+    needs: [getdate, checkrun]
     steps:
       - uses: actions/download-artifact@v3
         with:
