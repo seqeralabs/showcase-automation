@@ -8,6 +8,17 @@ on:
         default: false
         type: boolean
         required: false
+      timer:
+        description: "Environment"
+        default: delay5mins
+        type: choice
+        options:
+          - delay1mins
+          - delay5mins
+          - delay15mins
+          - delay30mins
+          - delay60mins
+          - delay120mins
 
   schedule:
     # Every day at 2am
@@ -113,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [getdate, checkmatrix]
     continue-on-error: true
-    environment: delay
+    environment: ${{ inputs.timer }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ matrix.includes.workspace }}
@@ -138,7 +149,7 @@ jobs:
         run: |
           export ID=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }} | jq -r '.workflows[].workflow.id')
           echo "Run ID: $ID"
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i $ID >> ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i $ID > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
