@@ -116,7 +116,7 @@ jobs:
     environment: delay
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
-      TOWER_WORKSPACE_ID: ${{ needs.runtest.outputs.workspace }}
+      TOWER_WORKSPACE_ID: ${{ matrix.includes.workspace }}
     strategy:
       matrix:
         includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
