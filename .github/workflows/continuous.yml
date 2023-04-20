@@ -169,8 +169,8 @@ jobs:
           name: ${{ needs.getdate.outputs.date }}_all_runs
           path: runs
 
-      - name: "stage matrix"
-        if: ${{ !inputs.slack }}
+      - name: "Slack"
+        if: ${{ inputs.slack }}
         run: |
           export MESSAGE=$(cat runs/* | jq -r '(["runName", "computeEnv", "status"] | (., map(length*"-"))), (.[] | [.general.runName, .general.computeEnv, .general.status]) | @tsv' | column -ts $'\t')
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
