@@ -165,18 +165,18 @@ jobs:
         if: ${{ !inputs.dryrun }}
         id: info
         run: |
-          tw -o json -v runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
-
-      - name: Clearup
-        if: ${{ inputs.remove && !inputs.dryrun }}
-        run: |
-          # Won't delete if run is active
-          tw -o json -v runs delete -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }}
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_all_runs
           path: "${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json"
+
+      - name: Clearup
+        if: ${{ inputs.remove && !inputs.dryrun }}
+        run: |
+          # Won't delete if run is active
+          tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }}
 
   slack:
     runs-on: ubuntu-latest
