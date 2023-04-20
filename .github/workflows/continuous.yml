@@ -10,7 +10,7 @@ on:
         required: false
       timer:
         description: "Environment"
-        default: delay5mins
+        default: delay60mins
         type: choice
         options:
           - delay1mins
@@ -19,6 +19,7 @@ on:
           - delay30mins
           - delay60mins
           - delay120mins
+          - delay360mins
       slack:
         description: Slack hook
         type: boolean
@@ -31,8 +32,8 @@ on:
         required: false
 
   schedule:
-    # Every day at 2am
-    - cron: "0 2 * * 1"
+    # Every Friday at 2am
+    - cron: "0 5 * * 5"
 
 jobs:
   getdate:
@@ -57,6 +58,27 @@ jobs:
       matrix:
         pipeline:
           - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
+          - {
+              name: rnaseq,
+              url: nf-core-rnaseq,
+              rev: "3.11.1",
+              latest: true,
+              profiles: "test",
+            }
+          - {
+              name: viralrecon,
+              url: nf-core-viralrecon-illumina,
+              rev: "2.6.0",
+              latest: true,
+              profiles: "test",
+            }
+          - {
+              name: sarek,
+              url: nf-core-sarek,
+              rev: "3.1.2",
+              latest: true,
+              profiles: "test",
+            }
         compute_env:
           - {
               name: aws,
@@ -68,8 +90,30 @@ jobs:
               name: azure,
               ref: seqera_azure_virginia,
               workdir: "az://seqeralabs-showcase",
-              workspace_id: "138659136604200",
+              workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID,
             }
+          - {
+              name: gcp,
+              ref: seqera_gcp_london,
+              workdir: "gs://seqeralabs-showcase",
+              workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID,
+            }
+        include:
+          - compute_env:
+              {
+                name: aws,
+                ref: seqera_aws_ireland_fusionv2_nvme,
+                workdir: "s3://seqeralabs-showcase",
+                workspace_id: SEQERA_SHOWCASE_WORKSPACE_ID,
+              }
+            pipeline:
+              {
+                name: sentieon,
+                url: nf-sentieon,
+                rev: "master",
+                latest: true,
+                profiles: "test",
+              }
 
     steps:
       - name: "export run name"
