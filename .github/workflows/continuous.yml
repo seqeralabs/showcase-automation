@@ -143,7 +143,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_all_runs
-          path: "${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json"
+          path: "${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json"
 
   slack:
     runs-on: ubuntu-latest
