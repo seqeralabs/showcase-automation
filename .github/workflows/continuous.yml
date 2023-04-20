@@ -25,7 +25,7 @@ on:
         required: false
         default: true
       remove:
-        description: Delete pipeline afterwards
+        description: Delete run
         default: true
         type: boolean
         required: false
