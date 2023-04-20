@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       dryrun:
-        description: "Dryrun (do not submit pipeline to Tower"
+        description: "Dryrun (do not submit pipeline)"
         default: false
         type: boolean
         required: false
@@ -19,6 +19,11 @@ on:
           - delay30mins
           - delay60mins
           - delay120mins
+      slack:
+        description: Slack hook
+        type: boolean
+        required: false
+        default: true
 
   schedule:
     # Every day at 2am
@@ -165,6 +170,7 @@ jobs:
           path: runs
 
       - name: "stage matrix"
+        if: ${{ !inputs.slack }}
         run: |
           export MESSAGE=$(cat runs/* | jq -r '(["runName", "computeEnv", "status"] | (., map(length*"-"))), (.[] | [.general.runName, .general.computeEnv, .general.status]) | @tsv' | column -ts $'\t')
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
