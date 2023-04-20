@@ -219,8 +219,11 @@ jobs:
       - name: Clearup
         if: ${{ inputs.remove && !inputs.dryrun }}
         run: |
-          # Won't delete if run is active
-          tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }}
+          STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general.status')
+          if [ "SUCCEEDED" = $STATUS ]; then
+            # Won't delete if run is active
+            tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }}
+          fi
 
   slack:
     runs-on: ubuntu-latest
