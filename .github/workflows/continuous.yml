@@ -82,8 +82,7 @@ jobs:
           wait: SUBMITTED
           parameters: |
             {
-                "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}",
-                "hook_url": "${{ secrets.SLACK_HOOK_URL }}"
+                "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
             }
 
       - name: "store run name"
@@ -167,4 +166,5 @@ jobs:
 
       - name: "stage matrix"
         run: |
-          cat runs/* | jq -c --slurp .
+          export MESSAGE=$(cat runs/* | jq -r '(["runName", "computeEnv", "status"] | (., map(length*"-"))), (.[] | [.general.runName, .general.computeEnv, .general.status]) | @tsv' | column -ts $'\t')
+          curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
