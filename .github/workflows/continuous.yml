@@ -165,7 +165,7 @@ jobs:
         if: ${{ !inputs.dryrun }}
         id: info
         run: |
-          tw -o json -v runs view -w ${{ matrix.includes.workspace }} -i $ID > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json -v runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - name: Clearup
         if: ${{ inputs.remove && !inputs.dryrun }}
