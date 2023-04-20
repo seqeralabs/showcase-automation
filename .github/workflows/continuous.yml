@@ -10,7 +10,7 @@ on:
         required: false
       timer:
         description: "Environment"
-        default: delay60mins
+        default: delay120mins
         type: choice
         options:
           - delay1mins
@@ -33,7 +33,7 @@ on:
 
   schedule:
     # Every Friday at 2am
-    - cron: "0 5 * * 5"
+    - cron: "0 1 * * 5"
 
 jobs:
   getdate:
