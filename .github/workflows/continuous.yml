@@ -191,6 +191,7 @@ jobs:
         if: ${{ inputs.slack }}
         run: |
           ls -lh runs/*
-          export MESSAGE=$(cat runs/* | jq -r '(["runName", "computeEnv", "status"] | (., map(length*"-"))), (.[] | [.general.runName, .general.computeEnv, .general.status]) | @tsv' | column -ts $'\t')
+          cat runs/*
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["runName", "computeEnv", "status"] | (., map(length*"-"))), (.[] | [.general.runName, .general.computeEnv, .general.status]) | @tsv' | column -ts $'\t')
           echo $MESSAGE
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
