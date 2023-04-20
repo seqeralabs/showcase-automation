@@ -24,6 +24,11 @@ on:
         type: boolean
         required: false
         default: true
+      remove:
+        description: Delete pipeline afterwards
+        default: true
+        type: boolean
+        required: false
 
   schedule:
     # Every day at 2am
@@ -148,18 +153,31 @@ jobs:
           chmod +x tw
           sudo mv tw /usr/local/bin/
 
-      - name: get results
+      - name: get ID
         if: ${{ !inputs.dryrun }}
+        id: id
         run: |
           export ID=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }} | jq -r '.workflows[].workflow.id')
           echo "Run ID: $ID"
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i $ID > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          echo "id=$ID" >> $GITHUB_OUTPUTS
+
+      - name: Get info
+        if: ${{ !inputs.dryrun }}
+        id: info
+        run: |
+          tw -o json -v runs view -w ${{ matrix.includes.workspace }} -i $ID > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+
+      - name: Clearup
+        if: ${{ inputs.remove && !inputs.dryrun }}
+        run: |
+        # Won't delete if run is active
+        tw -o json -v runs delete -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }}
 
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_all_runs
           path: "${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json"
-
+        
   slack:
     runs-on: ubuntu-latest
     needs: [getdate, checkrun]
