@@ -59,12 +59,12 @@ jobs:
         pipeline:
           - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
           - {
-            name: rnaseq,
-            url: nf-core-rnaseq,
-            rev: "3.11.1",
-            latest: true,
-            profiles: "test",
-          }
+              name: rnaseq,
+              url: nf-core-rnaseq,
+              rev: "3.11.1",
+              latest: true,
+              profiles: "test",
+            }
           - {
               name: viralrecon,
               url: nf-core-viralrecon-illumina,
@@ -93,19 +93,19 @@ jobs:
               workspace_id: "138659136604200",
             }
           - {
-            name: gcp,
-            ref: seqera_gcp_london,
-            workdir: "gs://seqeralabs-showcase",
-            workspace_id: "138659136604200",
-          }
-        include:
-          - compute_env:
-            {
-              name: aws,
-              ref: seqera_aws_ireland_fusionv2_nvme,
-              workdir: "s3://seqeralabs-showcase",
+              name: gcp,
+              ref: seqera_gcp_london,
+              workdir: "gs://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
+        include:
+          - compute_env:
+              {
+                name: aws,
+                ref: seqera_aws_ireland_fusionv2_nvme,
+                workdir: "s3://seqeralabs-showcase",
+                workspace_id: "138659136604200",
+              }
             pipeline:
               {
                 name: sentieon,
