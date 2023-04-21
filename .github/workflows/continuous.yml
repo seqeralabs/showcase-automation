@@ -58,27 +58,6 @@ jobs:
       matrix:
         pipeline:
           - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
-          - {
-              name: rnaseq,
-              url: nf-core-rnaseq,
-              rev: "3.11.1",
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: viralrecon,
-              url: nf-core-viralrecon-illumina,
-              rev: "2.6.0",
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: sarek,
-              url: nf-core-sarek,
-              rev: "3.1.2",
-              latest: true,
-              profiles: "test",
-            }
         compute_env:
           - {
               name: aws,
@@ -92,28 +71,6 @@ jobs:
               workdir: "az://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
-          - {
-              name: gcp,
-              ref: seqera_gcp_london,
-              workdir: "gs://seqeralabs-showcase",
-              workspace_id: "138659136604200",
-            }
-        include:
-          - compute_env:
-              {
-                name: aws,
-                ref: seqera_aws_ireland_fusionv2_nvme,
-                workdir: "s3://seqeralabs-showcase",
-                workspace_id: "138659136604200",
-              }
-            pipeline:
-              {
-                name: sentieon,
-                url: nf-sentieon,
-                rev: "master",
-                latest: true,
-                profiles: "test",
-              }
 
     steps:
       - name: "export unique run name"
@@ -142,7 +99,7 @@ jobs:
       - name: "store run name"
         if: success()
         run: |
-          echo '{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}" }' >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
+          echo '{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}", "pipeline": ${{ matrix.pipeline.url }} }' >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         if: success() || failure()
@@ -201,15 +158,18 @@ jobs:
         if: ${{ !inputs.dryrun }}
         id: id
         run: |
-          export ID=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }} | jq -r '.workflows[].workflow.id')
+          export DETAILS=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }})
+          export ID=$(echo $DETAILS | jq -r '.workflows[].workflow.id')
+          export WORKSPACE=$(echo $WORKFLOW_DETAILS | jq -r '.workspaceRef')
           echo "Run ID: $ID"
           echo "id=$ID" >> $GITHUB_OUTPUT
+          echo "workspaceRef=$WORKSPACE" >> $GITHUB_OUTPUT
 
       - name: Get info
         if: ${{ !inputs.dryrun }}
         id: info
         run: |
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workflow": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.url }}" } > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
