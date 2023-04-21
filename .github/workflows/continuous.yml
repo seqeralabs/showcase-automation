@@ -58,6 +58,27 @@ jobs:
       matrix:
         pipeline:
           - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
+          - {
+            name: rnaseq,
+            url: nf-core-rnaseq,
+            rev: "3.11.1",
+            latest: true,
+            profiles: "test",
+          }
+          - {
+              name: viralrecon,
+              url: nf-core-viralrecon-illumina,
+              rev: "2.6.0",
+              latest: true,
+              profiles: "test",
+            }
+          - {
+              name: sarek,
+              url: nf-core-sarek,
+              rev: "3.1.2",
+              latest: true,
+              profiles: "test",
+            }
         compute_env:
           - {
               name: aws,
@@ -71,6 +92,28 @@ jobs:
               workdir: "az://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
+          - {
+            name: gcp,
+            ref: seqera_gcp_london,
+            workdir: "gs://seqeralabs-showcase",
+            workspace_id: "138659136604200",
+          }
+        include:
+          - compute_env:
+            {
+              name: aws,
+              ref: seqera_aws_ireland_fusionv2_nvme,
+              workdir: "s3://seqeralabs-showcase",
+              workspace_id: "138659136604200",
+            }
+            pipeline:
+              {
+                name: sentieon,
+                url: nf-sentieon,
+                rev: "master",
+                latest: true,
+                profiles: "test",
+              }
 
     steps:
       - name: "export unique run name"
@@ -134,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [getdate, checkmatrix]
     continue-on-error: true
-    environment: ${{ inputs.timer || 'delay1mins' }}
+    environment: ${{ inputs.timer || 'delay60mins' }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ matrix.includes.workspace }}
