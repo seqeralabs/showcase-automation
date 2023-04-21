@@ -99,7 +99,7 @@ jobs:
       - name: "store run name"
         if: success()
         run: |
-          echo '{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}", "pipeline": ${{ matrix.pipeline.url }} }' >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
+          echo '{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}", "pipeline": "${{ matrix.pipeline.url }}" }' >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         if: success() || failure()
@@ -169,7 +169,7 @@ jobs:
         if: ${{ !inputs.dryrun }}
         id: info
         run: |
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workflow": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.url }}" } > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workflow": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" } > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
