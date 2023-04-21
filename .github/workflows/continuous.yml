@@ -33,7 +33,7 @@ on:
 
   schedule:
     # Every 45 mins past the hour
-    - cron: "0 * * * *"
+    - cron: "0,15,30,45 * * * *"
 
 jobs:
   getdate:
