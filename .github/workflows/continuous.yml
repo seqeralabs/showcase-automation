@@ -160,8 +160,9 @@ jobs:
         run: |
           export DETAILS=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }})
           export ID=$(echo $DETAILS | jq -r '.workflows[].workflow.id')
-          export WORKSPACE=$(echo $WORKFLOW_DETAILS | jq -r '.workspaceRef')
+          export WORKSPACE=$(echo $DETAILS | jq -r '.workspaceRef')
           echo "Run ID: $ID"
+          echo "WorkspaceRef: $WORKSPACE"
           echo "id=$ID" >> $GITHUB_OUTPUT
           echo "workspaceRef=$WORKSPACE" >> $GITHUB_OUTPUT
 
@@ -169,7 +170,7 @@ jobs:
         if: ${{ !inputs.dryrun }}
         id: info
         run: |
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workflow": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" } > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workflow": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
