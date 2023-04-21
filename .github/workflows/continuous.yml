@@ -243,6 +243,6 @@ jobs:
         run: |
           ls -lh runs/*
           cat runs/*
-          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status"] | (., map(length*"-"))), (.[] | [.general.pipeline, .general.computeEnv, .general.workflow, .general.status]) | @tsv' | column -ts $'\t')
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status"] | (., map(length*"-"))), (.[] | [.general.pipeline, .general.computeEnv, .general.workspace, .general.status]) | @tsv' | column -ts $'\t')
           echo $MESSAGE
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
