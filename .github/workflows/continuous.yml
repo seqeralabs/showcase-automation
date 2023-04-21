@@ -33,7 +33,7 @@ on:
 
   schedule:
     # Every Friday at 10am
-    - cron: "18 * * * 5"
+    - cron: "35 * * * 5"
 
 jobs:
   getdate:
@@ -73,9 +73,9 @@ jobs:
             }
 
     steps:
-      - name: "export run name"
+      - name: "export unique run name"
         run: |
-          echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}" >> $GITHUB_OUTPUT
+          echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}_$(uuidgen | cut -c 1-8)" >> $GITHUB_OUTPUT
           echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
         id: id
 
