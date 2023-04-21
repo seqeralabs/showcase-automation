@@ -170,7 +170,7 @@ jobs:
         if: ${{ !inputs.dryrun }}
         id: info
         run: |
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workflow": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workspace": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
@@ -200,6 +200,6 @@ jobs:
         run: |
           ls -lh runs/*
           cat runs/*
-          export MESSAGE=$(cat runs/* | jq -r --slurp '(["runName", "computeEnv", "status"] | (., map(length*"-"))), (.[] | [.general.runName, .general.computeEnv, .general.status]) | @tsv' | column -ts $'\t')
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status"] | (., map(length*"-"))), (.[] | [.general.pipeline, .general.computeEnv, .general.workflow, .general.status]) | @tsv' | column -ts $'\t')
           echo $MESSAGE
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
