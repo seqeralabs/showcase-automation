@@ -33,7 +33,7 @@ on:
 
   schedule:
     # Every Friday at 10am
-    - cron: "0 10 * * 5"
+    - cron: "10 10 * * 5"
 
 jobs:
   getdate:
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [getdate, checkmatrix]
     continue-on-error: true
-    environment: ${{ inputs.timer || 'delay120mins' }}
+    environment: ${{ inputs.timer || 'delay1mins' }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ matrix.includes.workspace }}
