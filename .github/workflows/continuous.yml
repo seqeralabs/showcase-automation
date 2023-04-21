@@ -32,8 +32,8 @@ on:
         required: false
 
   schedule:
-    # Every Friday at 2am
-    - cron: "0 1 * * 5"
+    # Every Friday at 10am
+    - cron: "0 10 * * 5"
 
 jobs:
   getdate:
@@ -58,27 +58,6 @@ jobs:
       matrix:
         pipeline:
           - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
-          - {
-              name: rnaseq,
-              url: nf-core-rnaseq,
-              rev: "3.11.1",
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: viralrecon,
-              url: nf-core-viralrecon-illumina,
-              rev: "2.6.0",
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: sarek,
-              url: nf-core-sarek,
-              rev: "3.1.2",
-              latest: true,
-              profiles: "test",
-            }
         compute_env:
           - {
               name: aws,
@@ -92,28 +71,6 @@ jobs:
               workdir: "az://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
-          - {
-              name: gcp,
-              ref: seqera_gcp_london,
-              workdir: "gs://seqeralabs-showcase",
-              workspace_id: "138659136604200",
-            }
-        include:
-          - compute_env:
-              {
-                name: aws,
-                ref: seqera_aws_ireland_fusionv2_nvme,
-                workdir: "s3://seqeralabs-showcase",
-                workspace_id: "138659136604200",
-              }
-            pipeline:
-              {
-                name: sentieon,
-                url: nf-sentieon,
-                rev: "master",
-                latest: true,
-                profiles: "test",
-              }
 
     steps:
       - name: "export run name"
@@ -177,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [getdate, checkmatrix]
     continue-on-error: true
-    environment: ${{ inputs.timer }}
+    environment: ${{ inputs.timer || 'delay120mins' }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ matrix.includes.workspace }}
@@ -217,7 +174,7 @@ jobs:
           path: "${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json"
 
       - name: Clearup
-        if: ${{ inputs.remove && !inputs.dryrun }}
+        if: ${{ (inputs.remove || true) && !inputs.dryrun }}
         run: |
           STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general.status')
           if [ "SUCCEEDED" = $STATUS ]; then
@@ -235,7 +192,7 @@ jobs:
           path: runs
 
       - name: "Slack"
-        if: ${{ inputs.slack }}
+        if: ${{ inputs.slack || true }}
         run: |
           ls -lh runs/*
           cat runs/*
