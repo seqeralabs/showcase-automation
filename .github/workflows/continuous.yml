@@ -32,8 +32,8 @@ on:
         required: false
 
   schedule:
-    # Every Friday at 10am
-    - cron: "40 * * * 5"
+    # Every 45 mins past the hour
+    - cron: "45 * * * *"
 
 jobs:
   getdate:
