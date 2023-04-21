@@ -33,7 +33,7 @@ on:
 
   schedule:
     # Every Friday at 10am
-    - cron: "16 10 * * 5"
+    - cron: "18 * * * 5"
 
 jobs:
   getdate:
