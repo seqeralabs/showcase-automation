@@ -53,7 +53,7 @@ jobs:
       workspace: ${{ steps.id.outputs.workspace }}
     strategy:
       matrix:
-        pipeline: ${{ fromJSON( inputs.pipelines) }}
+        pipeline: ${{ fromJSON( inputs.pipelines ) }}
         compute_env: ${{ fromJSON( inputs.compute_envs ) }}
 
     steps:

@@ -45,8 +45,8 @@ jobs:
   autorun-pipeline:
     uses: ./.github/workflows/autorun.yml
     with:
-      pipeline: ${{ input.pipelines }}
-      compute_envs: ${{ input.compute_envs}}
+      pipelines: ${{ inputs.pipelines }}
+      compute_envs: ${{ inputs.compute_envs }}
       dryrun: ${{ inputs.dryrun }}
       timer: ${{ inputs.timer }}
       slack: ${{ inputs.slack }}
