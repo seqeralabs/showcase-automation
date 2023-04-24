@@ -1,8 +1,16 @@
-name: showcase-autotest
+name: autorun-pipeline
 run-name: run-pipelines
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
+      pipelines:
+        description: "Pipeline JSON string"
+        type: string
+        default: '{ name: hello, url: hello, rev: master, latest: true, profiles: "" }'
+      compute_envs:
+        description: "Compute Environment JSON string"
+        type: string
+        default: '{"name":"aws", "ref": "seqera_aws_ireland_fusionv2_nvme", "workdir": "s3://seqeralabs-showcase", "workspace_id": "138659136604200"}'
       dryrun:
         description: "Dryrun (do not submit pipeline)"
         default: false
@@ -11,17 +19,7 @@ on:
       timer:
         description: "Environment"
         default: delay120mins
-        type: choice
-        options:
-          - noDelay
-          - delay1mins
-          - delay5mins
-          - delay15mins
-          - delay30mins
-          - delay60mins
-          - delay120mins
-          - delay360mins
-          - waitForReviewer
+        type: string
       slack:
         description: Slack hook
         type: boolean
@@ -32,10 +30,6 @@ on:
         default: true
         type: boolean
         required: false
-
-  schedule:
-    # Every 2am on Friday and Monday
-    - cron: "0 2 * * 1,6"
 
 jobs:
   getdate:
@@ -59,64 +53,8 @@ jobs:
       workspace: ${{ steps.id.outputs.workspace }}
     strategy:
       matrix:
-        pipeline:
-          - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
-          - {
-              name: rnaseq,
-              url: nf-core-rnaseq,
-              rev: "3.11.1",
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: viralrecon,
-              url: nf-core-viralrecon-illumina,
-              rev: "2.6.0",
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: sarek,
-              url: nf-core-sarek,
-              rev: "3.1.2",
-              latest: true,
-              profiles: "test",
-            }
-        compute_env:
-          - {
-              name: aws,
-              ref: seqera_aws_ireland_fusionv2_nvme,
-              workdir: "s3://seqeralabs-showcase",
-              workspace_id: "138659136604200",
-            }
-          - {
-              name: azure,
-              ref: seqera_azure_virginia,
-              workdir: "az://seqeralabs-showcase",
-              workspace_id: "138659136604200",
-            }
-          - {
-              name: gcp,
-              ref: seqera_gcp_london,
-              workdir: "gs://seqeralabs-showcase",
-              workspace_id: "138659136604200",
-            }
-        include:
-          - compute_env:
-              {
-                name: aws,
-                ref: seqera_aws_ireland_fusionv2_nvme,
-                workdir: "s3://seqeralabs-showcase",
-                workspace_id: "138659136604200",
-              }
-            pipeline:
-              {
-                name: sentieon,
-                url: nf-sentieon,
-                rev: "master",
-                latest: true,
-                profiles: "test",
-              }
+        pipeline: ${{ fromJSON( inputs.pipelines) }}
+        compute_env: ${{ fromJSON( inputs.compute_envs ) }}
 
     steps:
       - name: "export unique run name"
