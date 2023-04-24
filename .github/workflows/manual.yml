@@ -1,0 +1,54 @@
+name: manual-run-pipeline
+run-name: manual-trigger
+on:
+  workflow_dispatch:
+    inputs:
+      pipelines:
+        description: "Pipeline JSON string"
+        type: string
+        default: '{ name: hello, url: hello, rev: master, latest: true, profiles: "" }'
+      compute_envs:
+        description: "Compute Environment JSON string"
+        type: string
+        default: '{"name":"aws", "ref": "seqera_aws_ireland_fusionv2_nvme", "workdir": "s3://seqeralabs-showcase", "workspace_id": "138659136604200"}'
+      dryrun:
+        description: "Dryrun (do not submit pipeline)"
+        default: false
+        type: boolean
+        required: false
+      timer:
+        description: "Environment"
+        default: delay120mins
+        type: choice
+        options:
+          - noDelay
+          - delay1mins
+          - delay5mins
+          - delay15mins
+          - delay30mins
+          - delay60mins
+          - delay120mins
+          - delay360mins
+          - waitForReviewer
+      slack:
+        description: Slack hook
+        type: boolean
+        required: false
+        default: true
+      remove:
+        description: Delete run
+        default: true
+        type: boolean
+        required: false
+
+jobs:
+  autorun-pipeline:
+    uses: .github/workflows/autorun.yml
+    with:
+      pipeline: ${{ input.pipelines }}
+      compute_envs: ${{ input.compute_envs}}
+      dryrun: ${{ inputs.dryrun }}
+      timer: ${{ inputs.timer }}
+      slack: ${{ inputs.slack }}
+      remove: ${{ inputs.remove }}
+    secrets: inherit
