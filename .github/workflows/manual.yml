@@ -43,6 +43,7 @@ on:
 
 jobs:
   autorun-pipeline:
+    name: Run pipeline
     uses: ./.github/workflows/autorun.yml
     with:
       pipelines: ${{ inputs.pipelines }}
