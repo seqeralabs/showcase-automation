@@ -42,12 +42,28 @@ on:
         required: false
 
 jobs:
+  load-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      pipelines: ${{ steps.set-matrix.outputs.pipelines }}
+      compute_envs: ${{ steps.set-matrix.outputs.compute_envs }}
+    steps:
+      - id: echo-inputs
+        run: |
+          echo ${{ inputs.pipelines }}
+          echo ${{ inputs.compute_envs }}
+      - id: set-matrix
+        run: |
+          echo "pipelines=${{ inputs.pipelines }}" >> $GITHUB_OUTPUT
+          echo "compute_envs=${{ inputs.compute_envs }}" >> $GITHUB_OUTPUT
+
   autorun-pipeline:
     name: Run pipeline
+    needs: load-matrix
     uses: ./.github/workflows/autorun.yml
     with:
-      pipelines: ${{ inputs.pipelines }}
-      compute_envs: ${{ inputs.compute_envs }}
+      pipelines: ${{ needs.load-matrix.outputs.pipelines }}
+      compute_envs: ${{ needs.load-matrix.outputs.compute_envs }}
       dryrun: ${{ inputs.dryrun }}
       timer: ${{ inputs.timer }}
       slack: ${{ inputs.slack }}
