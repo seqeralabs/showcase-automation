@@ -54,8 +54,8 @@ jobs:
           echo ${{ inputs.compute_envs }}
       - id: set-matrix
         run: |
-          echo "pipelines=${{ inputs.pipelines }}" >> $GITHUB_OUTPUT
-          echo "compute_envs=${{ inputs.compute_envs }}" >> $GITHUB_OUTPUT
+          echo 'pipelines=${{ inputs.pipelines }}'' >> $GITHUB_OUTPUT
+          echo 'compute_envs=${{ inputs.compute_envs }}' >> $GITHUB_OUTPUT
 
   autorun-pipeline:
     name: Run pipeline
