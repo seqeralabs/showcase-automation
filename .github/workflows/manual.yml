@@ -6,11 +6,11 @@ on:
       pipelines:
         description: "Pipeline JSON string"
         type: string
-        default: '{ name: hello, url: hello, rev: master, latest: true, profiles: "" }'
+        default: '{ "name": "hello", "url": "hello", "rev": "master", "latest": "true", "profiles": "" }'
       compute_envs:
         description: "Compute Environment JSON string"
         type: string
-        default: '{"name":"aws", "ref": "seqera_aws_ireland_fusionv2_nvme", "workdir": "s3://seqeralabs-showcase", "workspace_id": "138659136604200"}'
+        default: '{"name": "aws", "ref": "seqera_aws_ireland_fusionv2_nvme", "workdir": "s3://seqeralabs-showcase", "workspace_id": "138659136604200"}'
       dryrun:
         description: "Dryrun (do not submit pipeline)"
         default: false
