@@ -42,15 +42,13 @@ on:
         required: false
 
 jobs:
-  steps:
-    - uses: actions/checkout@v3
-    - name: autorun-pipeline:
-        uses: .github/workflows/autorun.yml
-        with:
-        pipeline: ${{ input.pipelines }}
-        compute_envs: ${{ input.compute_envs}}
-        dryrun: ${{ inputs.dryrun }}
-        timer: ${{ inputs.timer }}
-        slack: ${{ inputs.slack }}
-        remove: ${{ inputs.remove }}
-        secrets: inherit
+  autorun-pipeline:
+    uses: ./.github/workflows/autorun.yml
+    with:
+      pipeline: ${{ input.pipelines }}
+      compute_envs: ${{ input.compute_envs}}
+      dryrun: ${{ inputs.dryrun }}
+      timer: ${{ inputs.timer }}
+      slack: ${{ inputs.slack }}
+      remove: ${{ inputs.remove }}
+    secrets: inherit
