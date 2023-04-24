@@ -6,7 +6,7 @@ on:
       pipelines:
         description: "Pipeline JSON string"
         type: string
-        default: '{ "name": "hello", "url": "hello", "rev": "master", "latest": "true", "profiles": "" }'
+        default: '{"name": "hello", "url": "hello", "rev": "master", "latest": true, "profiles": ""}'
       compute_envs:
         description: "Compute Environment JSON string"
         type: string
