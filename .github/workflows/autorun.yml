@@ -64,8 +64,9 @@ jobs:
           echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
         id: id
 
-      - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
+      - uses: adamrtalbot/action-tower-launch@5657ae150af3a8159374fff1dcb4321b38f3ce14
         if: ${{ !inputs.dryrun }}
+        id: submit-pipeline
         with:
           pipeline: ${{ matrix.pipeline.url }}
           workspace_id: ${{ steps.id.outputs.workspace }}
@@ -80,6 +81,10 @@ jobs:
             {
                 "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
             }
+
+      - name: "Echo outputs"
+        run: |
+          echo ${{ steps.id.submit-pipeline.json }}
 
       - name: "store run name"
         if: success()
