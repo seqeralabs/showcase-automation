@@ -10,7 +10,7 @@ on:
       compute_envs:
         description: "Compute Environment JSON string"
         type: string
-        default: '[{"name": "aws", "ref": "seqera_aws_ireland_fusionv2_nvme", "workdir": "s3://seqeralabs-showcase", "workspace_id": "138659136604200"}]'
+        default: '[{"name": "aws", "ref": "seqera_aws_ireland_fusionv2_nvme", "workdir": "s3://scidev-eu-west-1", "workspace_id": "162690105070735"}]'
       dryrun:
         description: "Dryrun (do not submit pipeline)"
         default: false
