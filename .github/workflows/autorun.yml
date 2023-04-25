@@ -104,6 +104,12 @@ jobs:
           name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_log
           path: tower_action_*.log
 
+      - uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: ${{ needs.getdate.outputs.date }}_run_json
+          path: tower_action_*.json
+
   checkmatrix:
     runs-on: ubuntu-latest
     needs: [runtest, getdate]
