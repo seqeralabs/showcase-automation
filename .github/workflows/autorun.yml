@@ -64,7 +64,7 @@ jobs:
           echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
         id: id
 
-      - uses: adamrtalbot/action-tower-launch@5657ae150af3a8159374fff1dcb4321b38f3ce14
+      - uses: adamrtalbot/action-tower-launch@outputs_to_gha
         if: ${{ !inputs.dryrun }}
         id: submit-pipeline
         with:
