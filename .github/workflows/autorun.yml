@@ -85,6 +85,10 @@ jobs:
       - name: "Echo outputs"
         run: |
           echo ${{ steps.submit-pipeline.outputs.json }}
+          echo ${{ steps.submit-pipeline.outputs.workflowId }}
+          echo ${{ steps.submit-pipeline.outputs.workflowUrl }}
+          echo ${{ steps.submit-pipeline.outputs.workspaceId }}
+          echo ${{ steps.submit-pipeline.outputs.workspaceRef }}
 
       - name: "store run name"
         if: success()
