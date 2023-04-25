@@ -84,7 +84,7 @@ jobs:
 
       - name: "Echo outputs"
         run: |
-          echo ${{ steps.id.submit-pipeline.json }}
+          echo ${{ steps.submit-pipeline.outputs.json }}
 
       - name: "store run name"
         if: success()
