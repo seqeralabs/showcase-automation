@@ -35,7 +35,7 @@ on:
 
   schedule:
     # Every 2am on Friday and Monday
-    - cron: "0 2 * * 1,6"
+    - cron: "0 2 * * *"
 
 jobs:
   getdate:
