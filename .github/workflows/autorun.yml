@@ -64,7 +64,7 @@ jobs:
           echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
         id: id
 
-      - uses: adamrtalbot/action-tower-launch@outputs_to_gha
+      - uses: seqeralabs/action-tower-launch@v1.2.0
         if: ${{ !inputs.dryrun }}
         id: submit-pipeline
         with:
@@ -82,19 +82,20 @@ jobs:
                 "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
             }
 
-      - name: "Echo outputs"
-        run: |
-          echo ${{ steps.submit-pipeline.outputs.json }}
-          echo ${{ steps.submit-pipeline.outputs.workflowId }}
-          echo ${{ steps.submit-pipeline.outputs.workflowUrl }}
-          echo ${{ steps.submit-pipeline.outputs.workspaceId }}
-          echo ${{ steps.submit-pipeline.outputs.workspaceRef }}
+      # - name: "Echo outputs"
+      #   run: |
+      #     echo ${{ steps.submit-pipeline.outputs.json }}
+      #     echo ${{ steps.submit-pipeline.outputs.workflowId }}
+      #     echo ${{ steps.submit-pipeline.outputs.workflowUrl }}
+      #     echo ${{ steps.submit-pipeline.outputs.workspaceId }}
+      #     echo ${{ steps.submit-pipeline.outputs.workspaceRef }}
 
       - name: "store run name"
         if: success()
         run: |
           set -euxo pipefail
-          echo '{ "name": "${{ steps.id.outputs.name }}", "workspace": "${{ steps.id.outputs.workspace }}", "pipeline": "${{ matrix.pipeline.url }}" }' >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
+          echo '${{ steps.submit-pipeline.outputs.json }}' -r '. += { "pipeline": "${{ matrix.includes.pipeline }}" } \
+            >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         if: success() || failure()
@@ -107,12 +108,6 @@ jobs:
         with:
           name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_log
           path: tower_action_*.log
-
-      - uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ needs.getdate.outputs.date }}_run_json
-          path: tower_action_*.json
 
   checkmatrix:
     runs-on: ubuntu-latest
@@ -177,7 +172,7 @@ jobs:
         id: info
         run: |
           set -euxo pipefail
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workspace": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
@@ -188,12 +183,12 @@ jobs:
         if: ${{ (inputs.remove || true) && !inputs.dryrun }}
         run: |
           set -euxo pipefail
-          STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general.status')
+          STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }} | jq -r '.general.status')
           if [ "SUCCEEDED" = $STATUS ]; then
             # Won't delete if run is active
-            tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }}
+            tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }}
           else
-            echo "Run has not finished, delete with 'tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }}' when ready."
+            echo "Run has not finished, delete with 'tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }}' when ready."
           fi
 
   slack:
