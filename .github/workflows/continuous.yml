@@ -126,7 +126,7 @@ jobs:
           echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
         id: id
 
-      - uses: seqeralabs/action-tower-launch@8ff078c8133a8ad2145a96752688a990198d6529
+      - uses: seqeralabs/action-tower-launch@v1.2.0
         if: ${{ !inputs.dryrun }}
         with:
           pipeline: ${{ matrix.pipeline.url }}
