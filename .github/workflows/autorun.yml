@@ -48,9 +48,6 @@ jobs:
     name: ${{ matrix.pipeline.name }}.${{ matrix.compute_env.name }}
     needs: getdate
     continue-on-error: true
-    outputs:
-      runname: ${{ steps.id.outputs.name }}
-      workspace: ${{ steps.id.outputs.workspace }}
     strategy:
       matrix:
         pipeline: ${{ fromJSON( inputs.pipelines ) }}
@@ -90,11 +87,11 @@ jobs:
       #     echo ${{ steps.submit-pipeline.outputs.workspaceId }}
       #     echo ${{ steps.submit-pipeline.outputs.workspaceRef }}
 
-      - name: "store run name"
+      - name: "Store run details as artifact"
         if: success()
         run: |
           set -euxo pipefail
-          echo '${{ steps.submit-pipeline.outputs.json }}' -r '. += { "pipeline": "${{ matrix.pipeline.name }}" }' \
+          echo '${{ steps.submit-pipeline.outputs.json }}' | base64 -d | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}" }' \
             >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
@@ -134,7 +131,7 @@ jobs:
     environment: ${{ inputs.timer || 'delay360mins' }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
-      TOWER_WORKSPACE_ID: ${{ matrix.includes.workspace }}
+      TOWER_WORKSPACE_ID: ${{ matrix.includes.workspaceId }}
     strategy:
       matrix:
         includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
@@ -177,16 +174,16 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_all_runs
-          path: "${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json"
+          path: "${{ matrix.includes.name }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json"
 
       - name: Clearup
         if: ${{ (inputs.remove || true) && !inputs.dryrun }}
         run: |
           set -euxo pipefail
-          STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }} | jq -r '.general.status')
+          STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general.status')
           if [ "SUCCEEDED" = $STATUS ]; then
             # Won't delete if run is active
-            tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }}
+            tw -o json runs delete -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }}
           else
             echo "Run has not finished, delete with 'tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }}' when ready."
           fi
