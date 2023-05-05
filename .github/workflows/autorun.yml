@@ -150,31 +150,17 @@ jobs:
           chmod +x tw
           sudo mv tw /usr/local/bin/
 
-      # - name: get ID
-      #   if: ${{ !inputs.dryrun }}
-      #   id: id
-      #   run: |
-      #     set -euo pipefail
-      #     export DETAILS=$(tw -o json runs list --workspace ${{ matrix.includes.workspace }} --filter ${{ matrix.includes.name }})
-      #     echo $DETAILS
-      #     export ID=$(echo $DETAILS | jq -r '.workflows[].workflow.id')
-      #     export WORKSPACE=$(echo $DETAILS | jq -r '.workspaceRef')
-      #     echo "Run ID: $ID"
-      #     echo "WorkspaceRef: $WORKSPACE"
-      #     echo "id=$ID" >> $GITHUB_OUTPUT
-      #     echo "workspaceRef=$WORKSPACE" >> $GITHUB_OUTPUT
-
       - name: Get info
         if: ${{ !inputs.dryrun }}
         id: info
         run: |
           set -euo pipefail
-          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_all_runs
-          path: "${{ matrix.includes.name }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json"
+          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json"
 
       - name: Clearup
         if: ${{ (inputs.remove || true) && !inputs.dryrun }}
