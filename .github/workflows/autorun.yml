@@ -88,7 +88,7 @@ jobs:
         if: success()
         run: |
           set -euo pipefail
-          echo '${{ steps.submit-pipeline.outputs.json }}' | base64 -d | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}" }' \
+          echo ${{ steps.submit-pipeline.outputs.json }}' | base64 -d | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}" }' \
             >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
