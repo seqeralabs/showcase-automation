@@ -1,0 +1,30 @@
+[
+    {
+        "name": "hello",
+        "url": "hello",
+        "rev": "master",
+        "latest": true,
+        "profiles": ""
+    },
+    {
+        "name": "rnaseq",
+        "url": "nf-core-rnaseq",
+        "rev": "3.11.1",
+        "latest": true,
+        "profiles": "test",
+    },
+    {
+        "name": "viralrecon",
+        "url": "nf-core-viralrecon-illumina",
+        "rev": "2.6.0",
+        "latest": true,
+        "profiles": "test",
+    },
+    {
+        "name": "sarek",
+        "url": "nf-core-sarek",
+        "rev": "3.1.2",
+        "latest": true,
+        "profiles": "test",
+    }
+]

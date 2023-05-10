@@ -1,0 +1,20 @@
+[
+    {
+        "name": "aws",
+        "ref": "seqera_aws_ireland_fusionv2_nvme",
+        "workdir": "s3://seqeralabs-showcase",
+        "workspace_id": "138659136604200"
+    },
+    {
+        "name": "azure",
+        "ref": "seqera_azure_virginia",
+        "workdir": "az://seqeralabs-showcase",
+        "workspace_id": "138659136604200"
+    },
+    {
+        "name": "gcp",
+        "ref": "seqera_gcp_london",
+        "workdir": "gs://seqeralabs-showcase",
+        "workspace_id": "138659136604200"
+    }
+]

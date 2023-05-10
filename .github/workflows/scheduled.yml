@@ -1,0 +1,42 @@
+name: manual-run-pipeline
+run-name: manual-trigger
+on:
+  schedule:
+    # Every 2am on Friday and Monday
+    - cron: "0 2 * * 1,6"
+
+jobs:
+  getmatrix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get Matrix from JSON
+        id: getmatrix
+        run: |
+          set -euo pipefail
+          echo "pipelines=$(cat pipelines.json | jq -rc)" >> $GITHUB_OUTPUT
+          echo "computeenvs=$(cat computeenvironments.json | jq -rc)" >> $GITHUB_OUTPUT
+          echo "include=$(cat include.json | jq -rc)" >> $GITHUB_OUTPUT
+        outputs:
+          pipelines: ${{ steps.getmatrix.outputs.pipeline }}
+          computeenv: ${{ steps.getmatrix.outputs.computeenv }}
+          include: ${{ steps.getmatrix.outputs.include }}
+
+    outputs:
+      pipeline: ${{ steps.getmatrix.outputs.pipelines }}
+      computeenvs: ${{ steps.getmatrix.outputs.computeenvs }}
+
+  autorun-pipeline:
+    name: Run pipeline
+    uses: ./.github/workflows/autorun.yml
+    needs: getmatrix
+    with:
+      pipelines: ${{ needs.getmatrix.outputs.pipelines }}
+      compute_envs: ${{ needs.getmatrix.outputs.computeenvs }}
+      dryrun: false
+      timer: "delay120mins"
+      slack: true
+      remove: true
+    secrets: inherit
