@@ -34,7 +34,7 @@ on:
         description: Slack hook
         type: boolean
         required: false
-        default: true
+        default: false
       remove:
         description: Delete run
         default: true
