@@ -11,10 +11,6 @@ on:
         description: "Compute Environment JSON string"
         type: string
         default: '{"name":"aws", "ref": "seqera_aws_ireland_fusionv2_nvme", "workdir": "s3://seqeralabs-showcase", "workspace_id": "138659136604200"}'
-      includes:
-        description: "Additional pipeline and compute environment to add to matrix"
-        default: "[]"
-        type: string
       dryrun:
         description: "Dryrun (do not submit pipeline)"
         default: false
@@ -56,7 +52,6 @@ jobs:
       matrix:
         pipeline: ${{ fromJSON( inputs.pipelines ) }}
         compute_env: ${{ fromJSON( inputs.compute_envs ) }}
-        includes: ${{ fromJSON( inputs.includes ) }}
 
     steps:
       - name: "export unique run name"

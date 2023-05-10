@@ -18,11 +18,9 @@ jobs:
           set -euo pipefail
           echo "pipelines=$(cat pipelines.json | jq -rc)" >> $GITHUB_OUTPUT
           echo "computeenvs=$(cat computeenvironments.json | jq -rc)" >> $GITHUB_OUTPUT
-          echo "include=$(cat include.json | jq -rc)" >> $GITHUB_OUTPUT
         outputs:
           pipelines: ${{ steps.getmatrix.outputs.pipeline }}
           computeenv: ${{ steps.getmatrix.outputs.computeenv }}
-          include: ${{ steps.getmatrix.outputs.include }}
 
     outputs:
       pipeline: ${{ steps.getmatrix.outputs.pipelines }}
