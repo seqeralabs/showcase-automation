@@ -224,7 +224,7 @@ jobs:
         id: info
         run: |
           set -euxo pipefail
-          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{ steps.id.outputs.id }} | jq -r '.general |= . + { "workspace": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspace }} -i ${{  matrix.includes.name }} | jq -r '.general |= . + { "workspace": "${{ steps.id.outputs.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.name }}_${{ matrix.includes.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
