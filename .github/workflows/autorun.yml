@@ -177,7 +177,7 @@ jobs:
           path: runs
 
       - name: "Slack"
-        if: ${{ inputs.slack || true }}
+        if: ${{ inputs.slack && true }}
         run: |
           set -euo pipefail
           ls -1 runs/*
