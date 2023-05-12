@@ -35,7 +35,7 @@ on:
 
   schedule:
     # Every 2am on Friday and Monday
-    - cron: "15 11 * * *"
+    - cron: "0 2 * * *"
 
 jobs:
   getdate:
@@ -51,7 +51,7 @@ jobs:
 
   runtest:
     runs-on: ubuntu-latest
-    name: ${{ matrix.pipeline.name }}.${{ matrix.compute_env.name }}
+    name: launch.${{ matrix.pipeline.name }}.${{ matrix.compute_env.name }}
     needs: getdate
     continue-on-error: true
     strategy:
