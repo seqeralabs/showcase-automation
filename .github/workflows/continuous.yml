@@ -239,7 +239,7 @@ jobs:
           path: runs
 
       - name: "Slack"
-        if: ${{ inputs.slack && true }}
+        if: ${{ ( github.event_name != 'workflow_dispatch' && inputs.slack ) || true }}
         run: |
           set -euo pipefail
           ls -1 runs/*
