@@ -66,8 +66,15 @@ jobs:
               profiles: "test",
             }
           - {
-              name: viralrecon,
+              name: viralrecon-illumina,
               url: nf-core-viralrecon-illumina,
+              rev: "2.6.0",
+              latest: true,
+              profiles: "test",
+            }
+          - {
+              name: viralrecon-nanopore,
+              url: nf-core-viralrecon-nanopore,
               rev: "2.6.0",
               latest: true,
               profiles: "test",
