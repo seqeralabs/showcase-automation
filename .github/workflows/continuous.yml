@@ -140,7 +140,6 @@ jobs:
           compute_env: ${{ matrix.compute_env.ref }}
           workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
           run_name: "${{ steps.id.outputs.name }}"
-          revision: "${{ matrix.pipeline.rev }}"
           profiles: ${{ matrix.pipeline.profiles }}
           wait: SUBMITTED
           parameters: |
