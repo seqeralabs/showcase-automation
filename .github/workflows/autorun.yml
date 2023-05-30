@@ -83,7 +83,7 @@ jobs:
         if: success()
         run: |
           set -euo pipefail
-          echo ${{ steps.submit-pipeline.outputs.json }} | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}" }' \
+          echo ${{ steps.submit-pipeline.outputs.json }} | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}" }' \
             >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
@@ -148,7 +148,7 @@ jobs:
         id: info
         run: |
           set -euo pipefail
-          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}" }' > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
@@ -177,11 +177,11 @@ jobs:
           path: runs
 
       - name: "Slack"
-        if: ${{ inputs.slack && true }}
+        if: ${{ ( github.event_name != 'workflow_dispatch' && inputs.slack ) || true }}
         run: |
           set -euo pipefail
           ls -1 runs/*
           cat runs/* | jq -r --slurp
-          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status"] | (., map(length*"-"))), (.[] | [.general.pipeline, .general.computeEnv, .general.workspace, .general.status]) | @tsv' | column -ts $'\t')
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "workflowUrl"] | (., map(length*"-"))), (.[] | [.general.pipeline, .general.computeEnv, .general.workspace, .general.status, .general.url]) | @tsv' | column -ts $'\t')
           echo $MESSAGE
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
