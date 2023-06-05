@@ -61,22 +61,31 @@ jobs:
           - {
               name: rnaseq,
               url: nf-core-rnaseq,
+              rev: "3.11.1",
               latest: true,
               profiles: "test",
             }
           - {
               name: viralrecon-illumina,
               url: nf-core-viralrecon-illumina,
+              rev: "2.6.0",
               latest: true,
               profiles: "test",
             }
           - {
               name: viralrecon-nanopore,
               url: nf-core-viralrecon-nanopore,
+              rev: "2.6.0",
               latest: true,
               profiles: "test",
             }
-          - { name: sarek, url: nf-core-sarek, latest: true, profiles: "test" }
+          - {
+              name: sarek,
+              url: nf-core-sarek,
+              rev: "3.1.2",
+              latest: true,
+              profiles: "test",
+            }
         compute_env:
           - {
               name: aws,
@@ -108,6 +117,7 @@ jobs:
               {
                 name: sentieon,
                 url: nf-sentieon,
+                rev: "master",
                 latest: true,
                 profiles: "test",
               }
@@ -120,7 +130,7 @@ jobs:
           echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
         id: id
 
-      - uses: seqeralabs/action-tower-launch@7f3af732ce8bd4e240c698c07f7fbc7e8b7b2e82
+      - uses: seqeralabs/action-tower-launch@v1.2.3
         if: ${{ !inputs.dryrun }}
         id: submit-pipeline
         with:
@@ -130,6 +140,7 @@ jobs:
           compute_env: ${{ matrix.compute_env.ref }}
           workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
           run_name: "${{ steps.id.outputs.name }}"
+          revision: "${{ matrix.pipeline.rev }}"
           profiles: ${{ matrix.pipeline.profiles }}
           wait: SUBMITTED
           parameters: |
