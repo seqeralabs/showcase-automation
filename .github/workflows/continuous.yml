@@ -57,32 +57,28 @@ jobs:
     strategy:
       matrix:
         pipeline:
-          - { name: hello, url: hello, rev: master, latest: true, profiles: "" }
+          - { name: hello, url: hello, latest: true, profiles: "" }
           - {
               name: rnaseq,
               url: nf-core-rnaseq,
-              rev: "3.12.0",
               latest: true,
               profiles: "test",
             }
           - {
               name: viralrecon-illumina,
               url: nf-core-viralrecon-illumina,
-              rev: "2.6.0",
               latest: true,
               profiles: "test",
             }
           - {
               name: viralrecon-nanopore,
               url: nf-core-viralrecon-nanopore,
-              rev: "2.6.0",
               latest: true,
               profiles: "test",
             }
           - {
               name: sarek,
               url: nf-core-sarek,
-              rev: "3.2.0",
               latest: true,
               profiles: "test",
             }
@@ -117,7 +113,6 @@ jobs:
               {
                 name: sentieon,
                 url: nf-sentieon,
-                rev: "master",
                 latest: true,
                 profiles: "test",
               }
@@ -140,7 +135,6 @@ jobs:
           compute_env: ${{ matrix.compute_env.ref }}
           workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
           run_name: "${{ steps.id.outputs.name }}"
-          revision: "${{ matrix.pipeline.rev }}"
           profiles: ${{ matrix.pipeline.profiles }}
           wait: SUBMITTED
           parameters: |
