@@ -76,12 +76,7 @@ jobs:
               latest: true,
               profiles: "test",
             }
-          - {
-              name: sarek,
-              url: nf-core-sarek,
-              latest: true,
-              profiles: "test",
-            }
+          - { name: sarek, url: nf-core-sarek, latest: true, profiles: "test" }
         compute_env:
           - {
               name: aws,
@@ -97,7 +92,7 @@ jobs:
             }
           - {
               name: gcp,
-              ref: seqera_gcp_london,
+              ref: tower_testing_gcp_finland,
               workdir: "gs://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
