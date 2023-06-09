@@ -92,7 +92,7 @@ jobs:
             }
           - {
               name: gcp,
-              ref: tower_testing_gcp_finland,
+              ref: seqera_gcp_finland,
               workdir: "gs://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
