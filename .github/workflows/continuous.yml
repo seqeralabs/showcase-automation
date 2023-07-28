@@ -74,7 +74,7 @@ jobs:
               name: viralrecon-nanopore,
               url: nf-core-viralrecon-nanopore,
               latest: true,
-              profiles: "test",
+              profiles: "test_nanopore",
             }
           - { name: sarek, url: nf-core-sarek, latest: true, profiles: "test" }
         compute_env:
