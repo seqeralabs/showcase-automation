@@ -1,4 +1,4 @@
-name: showcase-autotest
+name: seqera-showcase-autotest
 run-name: run-pipelines
 on:
   workflow_dispatch:
