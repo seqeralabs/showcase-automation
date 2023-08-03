@@ -64,11 +64,11 @@ jobs:
               profiles: "test" 
           }
           - {
-              name: rnaseq,
-              url: nf-core-rnaseq,
+              name: viralrecon-illumina,
+              url: nf-core-viralrecon,
               latest: true,
               profiles: "test",
-            }
+          }
         compute_env:
           - {
               name: community-showcase,
