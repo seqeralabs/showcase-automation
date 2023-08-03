@@ -111,6 +111,21 @@ jobs:
                 latest: true,
                 profiles: "test",
               }
+          - compute_env:
+              {
+                name: community-showcase,
+                ref: AWS_Batch_Ireland_FusionV2_NVMe,
+                workdir: "s3://nf-tower-bucket",
+                workspace_id: 40230138858677,
+              }  
+            pipeline:
+              {
+                name: rnaseq,
+                url: nf-core-rnaseq,
+                latest: true,
+                profiles: "test",
+              }
+
 
     steps:
       - name: "export unique run name"
