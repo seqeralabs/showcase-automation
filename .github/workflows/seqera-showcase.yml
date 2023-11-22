@@ -206,8 +206,11 @@ jobs:
         id: info
         run: |
           set -euo pipefail
-          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json
           tw -o json runs dump -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} --add-task-logs --add-fusion-logs --silent --output ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
+          tar -xzvf ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
+          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > workflow-info.json
+          jq -n 'reduce inputs as $s (.; .[input_filename] += $s)' *.json > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json
+          cp workflow-info.json ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
         with:
@@ -218,6 +221,11 @@ jobs:
         with:
           name: ${{ needs.getdate.outputs.date }}_all_run_dumps
           path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_all_run_dumps_json
+          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json"
 
       - name: Clearup
         if: ${{ (inputs.remove || true) && !inputs.dryrun }}
