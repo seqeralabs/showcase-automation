@@ -112,7 +112,6 @@ jobs:
                 profiles: "test",
               }
 
-
     steps:
       - name: "export unique run name"
         run: |
@@ -154,7 +153,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
-          name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_log
+          name: ${{ needs.getdate.outputs.date }}_launch_log
           path: tower_action_*.log
 
   checkmatrix:
