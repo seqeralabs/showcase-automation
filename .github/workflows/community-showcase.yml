@@ -56,19 +56,19 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        pipeline: 
-          - { 
-              name: rnaseq, 
-              url: nf-core-rnaseq, 
-              latest: true, 
-              profiles: "test" 
-          }
+        pipeline:
+          - {
+              name: rnaseq,
+              url: nf-core-rnaseq,
+              latest: true,
+              profiles: "test",
+            }
           - {
               name: viralrecon-illumina,
               url: nf-core-viralrecon,
               latest: true,
               profiles: "test",
-          }
+            }
         compute_env:
           - {
               name: community-showcase,
@@ -77,143 +77,142 @@ jobs:
               workspace_id: 40230138858677,
             }
 
-            steps:
-              - name: "export unique run name"
-                run: |
-                  set -euo pipefail
-                  echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}_$(uuidgen | cut -c 1-8)" >> $GITHUB_OUTPUT
-                  echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
-                id: id
-        
-              - uses: seqeralabs/action-tower-launch@v2
-                if: ${{ !inputs.dryrun }}
-                id: submit-pipeline
-                with:
-                  pipeline: ${{ matrix.pipeline.url }}
-                  workspace_id: ${{ steps.id.outputs.workspace }}
-                  access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
-                  compute_env: ${{ matrix.compute_env.ref }}
-                  workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
-                  run_name: "${{ steps.id.outputs.name }}"
-                  profiles: ${{ matrix.pipeline.profiles }}
-                  wait: SUBMITTED
-                  parameters: |
-                    {
-                        "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
-                    }
-        
-              - name: "Store run details as artifact"
-                if: success()
-                run: |
-                  set -euo pipefail
-                  echo ${{ steps.submit-pipeline.outputs.json }} | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}" }' \
-                    >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
-        
-              - uses: actions/upload-artifact@v3
-                if: success() || failure()
-                with:
-                  name: ${{ needs.getdate.outputs.date }}_run_details
-                  path: "${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json"
-        
-              - uses: actions/upload-artifact@v3
-                if: success() || failure()
-                with:
-                  name: ${{ needs.getdate.outputs.date }}_launch_log
-                  path: tower_action_*.log
-        
-          checkmatrix:
-            runs-on: ubuntu-latest
-            needs: [runtest, getdate]
-            continue-on-error: true
-            outputs:
-              matrix: ${{ steps.matrix.outputs.matrix }}
-            steps:
-              - uses: actions/download-artifact@v3
-                with:
-                  name: ${{ needs.getdate.outputs.date }}_run_details
-                  path: run_details
-        
-              - name: "stage matrix"
-                run: |
-                  set -euo pipefail
-                  echo "matrix=$(cat run_details/* | jq -c --slurp .)" >> $GITHUB_OUTPUT
-                id: matrix
-        
-          checkrun:
-            name: check.${{ matrix.includes.pipeline }}.${{ matrix.includes.workspaceId }}
-            runs-on: ubuntu-latest
-            needs: [getdate, checkmatrix]
-            continue-on-error: true
-            environment: ${{ inputs.timer || 'delay360mins' }}
-            env:
-              TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
-              TOWER_WORKSPACE_ID: ${{ matrix.includes.workspaceId }}
-            strategy:
-              matrix:
-                includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
-        
-            steps:
-              - name: "print matrix input"
-                run: |
-                  set -euo pipefail
-                  echo "${{ toJSON(matrix) }}"
-        
-              - name: Install tw CLI
-                run: |
-                  set -euo pipefail
-                  wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.8.0/tw-linux-x86_64
-                  mv tw-* tw
-                  chmod +x tw
-                  sudo mv tw /usr/local/bin/
-        
-              - name: Get info
-                if: ${{ !inputs.dryrun }}
-                id: info
-                run: |
-                  set -euo pipefail
-                  tw -o json runs dump -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} --add-task-logs --add-fusion-logs --silent --output ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
-                  tar -xzvf ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
-                  tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > workflow-info.json
-                  jq -n 'reduce inputs as $s (.; (.[input_filename|rtrimstr(".json")]) += $s)' *.json > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json
-        
-              - uses: actions/upload-artifact@v3
-                with:
-                  name: ${{ needs.getdate.outputs.date }}_all_run_dumps
-                  path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz"
-        
-              - uses: actions/upload-artifact@v3
-                with:
-                  name: ${{ needs.getdate.outputs.date }}_all_run_json
-                  path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json"
-        
-              - name: Clearup
-                if: ${{ (inputs.remove || true) && !inputs.dryrun }}
-                run: |
-                  set -euo pipefail
-                  STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general.status')
-                  if [ "SUCCEEDED" = $STATUS ]; then
-                    # Won't delete if run is active
-                    tw -o json runs delete -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }}
-                  else
-                    echo "Run has not finished, delete with 'tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }}' when ready."
-                  fi
-        
-          slack:
-            runs-on: ubuntu-latest
-            needs: [getdate, checkrun]
-            steps:
-              - uses: actions/download-artifact@v3
-                with:
-                  name: ${{ needs.getdate.outputs.date }}_all_run_json
-                  path: runs
-        
-              - name: "Slack"
-                if: ${{ ( github.event_name != 'workflow_dispatch' && inputs.slack ) || true }}
-                run: |
-                  set -euo pipefail
-                  ls -1 runs/*
-                  cat runs/* | jq -r --slurp
-                  export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "platformVersion", "nextflowVersion", "pipelineRevision", "workflowUrl"] | (., map(length*"-"))), (.[] | [.["workflow-info"]["general"]["pipeline"], .["workflow-info"]["general"]["workspace"], .["workflow-launch"]["computeEnv"]["name"], .["workflow"]["status"], .["service-info"]["version"], .["workflow"]["nextflow"]["version"], .["workflow-launch"]["revision"], .["workflow-info"]["general"]["url"]]) | map(.//"-") | @tsv' | column -ts $'\t')
-                  echo $MESSAGE
-                  curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
-        
+    steps:
+      - name: "export unique run name"
+        run: |
+          set -euo pipefail
+          echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}_$(uuidgen | cut -c 1-8)" >> $GITHUB_OUTPUT
+          echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
+        id: id
+
+      - uses: seqeralabs/action-tower-launch@v2
+        if: ${{ !inputs.dryrun }}
+        id: submit-pipeline
+        with:
+          pipeline: ${{ matrix.pipeline.url }}
+          workspace_id: ${{ steps.id.outputs.workspace }}
+          access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
+          compute_env: ${{ matrix.compute_env.ref }}
+          workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
+          run_name: "${{ steps.id.outputs.name }}"
+          profiles: ${{ matrix.pipeline.profiles }}
+          wait: SUBMITTED
+          parameters: |
+            {
+                "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
+            }
+
+      - name: "Store run details as artifact"
+        if: success()
+        run: |
+          set -euo pipefail
+          echo ${{ steps.submit-pipeline.outputs.json }} | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}" }' \
+            >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
+
+      - uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: ${{ needs.getdate.outputs.date }}_run_details
+          path: "${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json"
+
+      - uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: ${{ needs.getdate.outputs.date }}_launch_log
+          path: tower_action_*.log
+
+  checkmatrix:
+    runs-on: ubuntu-latest
+    needs: [runtest, getdate]
+    continue-on-error: true
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_run_details
+          path: run_details
+
+      - name: "stage matrix"
+        run: |
+          set -euo pipefail
+          echo "matrix=$(cat run_details/* | jq -c --slurp .)" >> $GITHUB_OUTPUT
+        id: matrix
+
+  checkrun:
+    name: check.${{ matrix.includes.pipeline }}.${{ matrix.includes.workspaceId }}
+    runs-on: ubuntu-latest
+    needs: [getdate, checkmatrix]
+    continue-on-error: true
+    environment: ${{ inputs.timer || 'delay360mins' }}
+    env:
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      TOWER_WORKSPACE_ID: ${{ matrix.includes.workspaceId }}
+    strategy:
+      matrix:
+        includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
+
+    steps:
+      - name: "print matrix input"
+        run: |
+          set -euo pipefail
+          echo "${{ toJSON(matrix) }}"
+
+      - name: Install tw CLI
+        run: |
+          set -euo pipefail
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.8.0/tw-linux-x86_64
+          mv tw-* tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/
+
+      - name: Get info
+        if: ${{ !inputs.dryrun }}
+        id: info
+        run: |
+          set -euo pipefail
+          tw -o json runs dump -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} --add-task-logs --add-fusion-logs --silent --output ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
+          tar -xzvf ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
+          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > workflow-info.json
+          jq -n 'reduce inputs as $s (.; (.[input_filename|rtrimstr(".json")]) += $s)' *.json > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_all_run_dumps
+          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_all_run_json
+          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json"
+
+      - name: Clearup
+        if: ${{ (inputs.remove || true) && !inputs.dryrun }}
+        run: |
+          set -euo pipefail
+          STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general.status')
+          if [ "SUCCEEDED" = $STATUS ]; then
+            # Won't delete if run is active
+            tw -o json runs delete -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }}
+          else
+            echo "Run has not finished, delete with 'tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }}' when ready."
+          fi
+
+  slack:
+    runs-on: ubuntu-latest
+    needs: [getdate, checkrun]
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_all_run_json
+          path: runs
+
+      - name: "Slack"
+        if: ${{ ( github.event_name != 'workflow_dispatch' && inputs.slack ) || true }}
+        run: |
+          set -euo pipefail
+          ls -1 runs/*
+          cat runs/* | jq -r --slurp
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "platformVersion", "nextflowVersion", "pipelineRevision", "workflowUrl"] | (., map(length*"-"))), (.[] | [.["workflow-info"]["general"]["pipeline"], .["workflow-info"]["general"]["workspace"], .["workflow-launch"]["computeEnv"]["name"], .["workflow"]["status"], .["service-info"]["version"], .["workflow"]["nextflow"]["version"], .["workflow-launch"]["revision"], .["workflow-info"]["general"]["url"]]) | map(.//"-") | @tsv' | column -ts $'\t')
+          echo $MESSAGE
+          curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
