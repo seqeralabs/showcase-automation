@@ -84,18 +84,18 @@ jobs:
               workdir: "s3://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
-        #   - {
-        #       name: azure,
-        #       ref: seqera_azure_virginia_fusion,
-        #       workdir: "az://seqeralabs-showcase",
-        #       workspace_id: "138659136604200",
-        #     }
-        #   - {
-        #       name: gcp,
-        #       ref: seqera_gcp_finland_fusion,
-        #       workdir: "gs://seqeralabs-showcase-eu-north-1",
-        #       workspace_id: "138659136604200",
-        #     }
+          - {
+              name: azure,
+              ref: seqera_azure_virginia_fusion,
+              workdir: "az://seqeralabs-showcase",
+              workspace_id: "138659136604200",
+            }
+          - {
+              name: gcp,
+              ref: seqera_gcp_finland_fusion,
+              workdir: "gs://seqeralabs-showcase-eu-north-1",
+              workspace_id: "138659136604200",
+            }
         # include:
         #   - compute_env:
         #       {
