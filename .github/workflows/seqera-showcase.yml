@@ -57,13 +57,13 @@ jobs:
     strategy:
       matrix:
         pipeline:
-          - { name: hello, url: hello, latest: true, profiles: "" }
-          # - {
-          #     name: rnaseq,
-          #     url: nf-core-rnaseq,
-          #     latest: true,
-          #     profiles: "test",
-          #   }
+          # - { name: hello, url: hello, latest: true, profiles: "" }
+          - {
+              name: rnaseq,
+              url: nf-core-rnaseq,
+              latest: true,
+              profiles: "test",
+            }
           # - {
           #     name: viralrecon-illumina,
           #     url: nf-core-viralrecon-illumina,
