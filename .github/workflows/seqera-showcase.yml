@@ -34,7 +34,7 @@ on:
         required: false
 
   schedule:
-    # Every 2am on Friday and Monday
+    # Every 2am
     - cron: "0 2 * * *"
 
 jobs:
