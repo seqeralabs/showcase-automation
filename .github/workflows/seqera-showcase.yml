@@ -209,7 +209,7 @@ jobs:
           tw -o json runs dump -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} --add-task-logs --add-fusion-logs --silent --output ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
           tar -xzvf ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
           tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > workflow-info.json
-          jq -n 'reduce inputs as $s (.; .[input_filename] += $s)' *.json > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json
+          jq -n 'reduce inputs as $s (.; (.[input_filename|rtrimstr(".json")]) += $s)' *.json > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json
           cp workflow-info.json ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json
 
       - uses: actions/upload-artifact@v3
@@ -245,7 +245,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: ${{ needs.getdate.outputs.date }}_all_runs
+          name: ${{ needs.getdate.outputs.date }}_all_run_dumps_json
           path: runs
 
       - name: "Slack"
@@ -254,6 +254,6 @@ jobs:
           set -euo pipefail
           ls -1 runs/*
           cat runs/* | jq -r --slurp
-          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "workflowUrl"] | (., map(length*"-"))), (.[] | [.general.pipeline, .general.computeEnv, .general.workspace, .general.status, .general.url]) | @tsv' | column -ts $'\t')
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "workflowUrl"] | (., map(length*"-"))), (.[] | [.["workflow-info"]["general"]["pipeline"], .["workflow-info"]["general"]["workspace"], .["workflow-launch"]["computeEnv"]["name"], .["workflow"]["status"], .["workflow-info"]["general]["url"]]) | @tsv' | column -ts $'\t')
           echo $MESSAGE
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
