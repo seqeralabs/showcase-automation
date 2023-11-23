@@ -254,6 +254,6 @@ jobs:
           set -euo pipefail
           ls -1 runs/*
           cat runs/* | jq -r --slurp
-          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "workflowUrl"] | (., map(length*"-"))), (.[] | [.["workflow-info"]["general"]["pipeline"], .["workflow-info"]["general"]["workspace"], .["workflow-launch"]["computeEnv"]["name"], .["workflow"]["status"], .["workflow-info"]["general"]["url"]]) | @tsv' | column -ts $'\t')
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "platformVersion", "nextflowVersion", "pipelineRevision", "workflowUrl"] | (., map(length*"-"))), (.[] | [.["workflow-info"]["general"]["pipeline"], .["workflow-info"]["general"]["workspace"], .["workflow-launch"]["computeEnv"]["name"], .["workflow"]["status"], .["service-info"]["version"], .["workflow"]["nextflow"]["version"], .["workflow-launch"]["revision"], .["workflow-info"]["general"]["url"]]) | @tsv' | column -ts $'\t')
           echo $MESSAGE
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
