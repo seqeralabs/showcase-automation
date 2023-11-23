@@ -144,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [getdate, checkmatrix]
     continue-on-error: true
-    environment: ${{ inputs.timer || 'delay360mins' }}
+    environment: ${{ inputs.timer || 'delay120mins' }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ matrix.includes.workspaceId }}
