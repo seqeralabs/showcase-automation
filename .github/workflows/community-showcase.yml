@@ -34,7 +34,7 @@ on:
         required: false
 
   schedule:
-    # Every 2am on Friday and Monday
+    # Every 2am
     - cron: "0 2 * * *"
 
 jobs:
@@ -56,19 +56,19 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        pipeline: 
-          - { 
-              name: rnaseq, 
-              url: nf-core-rnaseq, 
-              latest: true, 
-              profiles: "test" 
-          }
+        pipeline:
+          - {
+              name: rnaseq,
+              url: nf-core-rnaseq,
+              latest: true,
+              profiles: "test",
+            }
           - {
               name: viralrecon-illumina,
               url: nf-core-viralrecon,
               latest: true,
               profiles: "test",
-          }
+            }
         compute_env:
           - {
               name: community-showcase,
@@ -93,6 +93,7 @@ jobs:
           workspace_id: ${{ steps.id.outputs.workspace }}
           access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
           compute_env: ${{ matrix.compute_env.ref }}
+          workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
           run_name: "${{ steps.id.outputs.name }}"
           profiles: ${{ matrix.pipeline.profiles }}
           wait: SUBMITTED
@@ -117,7 +118,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
-          name: ${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_log
+          name: ${{ needs.getdate.outputs.date }}_launch_log
           path: tower_action_*.log
 
   checkmatrix:
@@ -143,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [getdate, checkmatrix]
     continue-on-error: true
-    environment: ${{ inputs.timer || 'delay360mins' }}
+    environment: ${{ inputs.timer || 'delay120mins' }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       TOWER_WORKSPACE_ID: ${{ matrix.includes.workspaceId }}
@@ -160,7 +161,7 @@ jobs:
       - name: Install tw CLI
         run: |
           set -euo pipefail
-          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.7.3/tw-0.7.3-linux-x86_64
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.8.0/tw-linux-x86_64
           mv tw-* tw
           chmod +x tw
           sudo mv tw /usr/local/bin/
@@ -170,12 +171,20 @@ jobs:
         id: info
         run: |
           set -euo pipefail
-          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json
+          tw -o json runs dump -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} --add-task-logs --add-fusion-logs --silent --output ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
+          tar -xzvf ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
+          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > workflow-info.json
+          jq -n 'reduce inputs as $s (.; (.[input_filename|rtrimstr(".json")]) += $s)' *.json > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ needs.getdate.outputs.date }}_all_runs
-          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.json"
+          name: ${{ needs.getdate.outputs.date }}_all_run_dumps
+          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz"
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_all_run_json
+          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json"
 
       - name: Clearup
         if: ${{ (inputs.remove || true) && !inputs.dryrun }}
@@ -195,7 +204,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: ${{ needs.getdate.outputs.date }}_all_runs
+          name: ${{ needs.getdate.outputs.date }}_all_run_json
           path: runs
 
       - name: "Slack"
@@ -204,6 +213,6 @@ jobs:
           set -euo pipefail
           ls -1 runs/*
           cat runs/* | jq -r --slurp
-          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "computeEnv", "workspace", "status", "workflowUrl"] | (., map(length*"-"))), (.[] | [.general.pipeline, .general.computeEnv, .general.workspace, .general.status, .general.url]) | @tsv' | column -ts $'\t')
+          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "workspace", "computeEnv", "status", "platform", "nextflow", "revision", "workflowUrl"] | (., map(length*"-"))), (.[] | [.["workflow-info"]["general"]["pipeline"], .["workflow-info"]["general"]["workspace"], .["workflow-launch"]["computeEnv"]["name"], .["workflow"]["status"], .["service-info"]["version"], .["workflow"]["nextflow"]["version"], .["workflow-launch"]["revision"], .["workflow-info"]["general"]["url"]]) | map(.//"-") | @tsv' | column -ts $'\t')
           echo $MESSAGE
           curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
