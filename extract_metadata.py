@@ -28,9 +28,9 @@ import json
 import logging
 import tarfile
 
-
 from argparse import Namespace
 from pathlib import Path
+from tabulate import tabulate
 from typing import Any, Dict, List
 
 
@@ -116,23 +116,24 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
         return extracted_data
 
 
-def parse_json(json_data: Dict[str, Any], keys_list: List[str]) -> Dict[str, Any]:
+def parse_json(json_data: Dict[str, Any], keys: Dict[str, str]) -> Dict[str, Any]:
     """
     Parse a JSON object and return the values for the specified keys, including nested keys.
 
     Args:
         json_data (dict): The JSON input data to parse.
-        keys_list (list): A list of keys to extract values from the JSON data. Nested keys should be
-                          denoted with a period.
+        keys_list (dict): A key value pair to extract from nested JSON. The key will be used for
+            assignment in the output dictionary and the value will be what is extracted from the
+            input JSON. Nested keys should be denoted with a period.
 
     Returns:
         dict: A dictionary of extracted key-value pairs from the JSON data.
     """
     update_dict = {}
-    for key in keys_list:
+    for key, val in keys.items():
         try:
             value = json_data
-            for part in key.split("."):
+            for part in val.split("."):
                 value = value.get(part)
                 if value is None:
                     break
@@ -164,7 +165,34 @@ def main() -> None:
 
     logging.info(f"Workflow metadata written to {args.output}.")
 
+    # for x in extracted_data:
+    #     # Need to add https://github.com/seqeralabs/tower-cli/pull/364 to get all information
+    #     print(x["workflow-info"]["general"]["pipeline"])
+    #     print(x["workflow-info"]["general"]["workspace"])
+    #     print(x["workflow-info"]["general"]["url"])
+    #     print(x["workflow-launch"]["computeEnv"]["name"])
+    #     print(x["workflow"]["status"])
+    #     print(x["service-info"]["version"])
+    #     print(x["workflow"]["nextflow"]["version"])
+    #     print(x["workflow-launch"]["revision"])
+
+    # Get critical info, flatten and rename to user friendly values
+    data_to_extract = {
+        # "pipeline": "workflow-info.general.pipeline",
+        # "workspace": "workflow-info.general.workspace",
+        # "workflowUrl": "workflow-info.general.url",
+        "name": "workflow-launch.computeEnv.name",
+        "status": "workflow.status",
+        "revision": "workflow-launch.revision",
+        "service_version": "service-info.version",
+        "nextflow_version": "workflow.nextflow.version",
+    }
+    parsed_data = [parse_json(x, data_to_extract) for x in extracted_data]
+
+    la_mesa = tabulate(parsed_data, headers="keys", tablefmt="simple")
+
     # Convert into Slack Hook here.
+    print(la_mesa)
 
 
 if __name__ == "__main__":
