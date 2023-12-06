@@ -26,9 +26,11 @@ from seqerakit import seqeraplatform
 import argparse
 import json
 import logging
+import os
 import tarfile
 
 from argparse import Namespace
+from slack_sdk.webhook import WebClient, WebhookClient
 from pathlib import Path
 from tabulate import tabulate
 from typing import Any, Dict, List
@@ -191,8 +193,30 @@ def main() -> None:
 
     la_mesa = tabulate(parsed_data, headers="keys", tablefmt="simple")
 
-    # Convert into Slack Hook here.
     print(la_mesa)
+
+    # Send Slack Message
+    webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
+    response = webhookclient.send(
+        text="```" + la_mesa + "```", headers={"Content-type": "application/json"}
+    )
+
+    # We can possibly attach the JSON as a file but not supported by API
+    # We might be able to use file.upload API: https://api.slack.com/tutorials/uploading-files-with-python
+    # webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
+    # auth_test = webclient.auth_test()
+    # if not auth_test.data.get("ok", False):
+    #     raise Exception("Invalid Slack token")
+    # file_upload = webclient.files_upload(
+    #     title="My Test Text File",
+    #     filename="test.txt",
+    #     content="Hi there! This is a text file!",
+    # )
+    # file_url = new_file.get("file").get("permalink")
+    # new_message = client.chat_postMessage(
+    #     channel="#random",
+    #     text=f"Here is the file: {file_url}",
+    # )
 
 
 if __name__ == "__main__":
