@@ -187,12 +187,12 @@ jobs:
 
       - name: finish workflow
         run: |
-          echo ${{ join(steps.matrix.outputs.matrix, ' ') }}
+          echo $(cat run_details/* | jq -cj --slurp '.[].workflowId | @sh')
           echo python extract_metadata.py \
             -l DEBUG \
             -w 34830707738561 \
             -o ${{ needs.getdate.outputs.date }}_workflow_data.json \
-            -i ${{ join(steps.matrix.outputs.matrix.*.workflowId, ' ') }}
+            -i $(cat run_details/* | jq -cj --slurp '.[].workflowId | @sh')
 
       - uses: actions/upload-artifact@v3
         with:
