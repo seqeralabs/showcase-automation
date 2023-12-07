@@ -235,7 +235,7 @@ def send_slack_message(
         raise Exception("Invalid Slack token")
     file_upload = webclient.files_upload_v2(
         title=filepath.stem,
-        file=filepath,
+        file=filepath.as_posix(),
         initial_comment="```" + la_mesa + "```",
         channel="C054QAK3FLZ",
     )
