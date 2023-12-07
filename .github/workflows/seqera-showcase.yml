@@ -161,6 +161,7 @@ jobs:
     needs: [runtest, getdate]
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
