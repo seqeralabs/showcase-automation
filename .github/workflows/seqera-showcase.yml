@@ -156,7 +156,7 @@ jobs:
           name: ${{ needs.getdate.outputs.date }}_launch_log
           path: tower_action_*.log
 
-  checkmatrix:
+  clearup-and-delete:
     runs-on: ubuntu-latest
     needs: [runtest, getdate]
     continue-on-error: true
@@ -174,80 +174,20 @@ jobs:
           echo "matrix=$(cat run_details/* | jq -c --slurp .)" >> $GITHUB_OUTPUT
         id: matrix
 
-  checkrun:
-    name: check.${{ matrix.includes.pipeline }}.${{ matrix.includes.workspaceId }}
-    runs-on: ubuntu-latest
-    needs: [getdate, checkmatrix]
-    continue-on-error: true
-    environment: ${{ inputs.timer || 'delay120mins' }}
-    env:
-      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
-      TOWER_WORKSPACE_ID: ${{ matrix.includes.workspaceId }}
-    strategy:
-      matrix:
-        includes: ${{ fromJSON(needs.checkmatrix.outputs.matrix) }}
-
-    steps:
-      - name: "print matrix input"
-        run: |
-          set -euo pipefail
-          echo "${{ toJSON(matrix) }}"
-
-      - name: Install tw CLI
-        run: |
-          set -euo pipefail
-          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.8.0/tw-linux-x86_64
-          mv tw-* tw
-          chmod +x tw
-          sudo mv tw /usr/local/bin/
-
-      - name: Get info
-        if: ${{ !inputs.dryrun }}
-        id: info
-        run: |
-          set -euo pipefail
-          tw -o json runs dump -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} --add-task-logs --add-fusion-logs --silent --output ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
-          tar -xzvf ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz
-          tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general |= . + { "workspace": "${{ matrix.includes.workspaceRef }}", "pipeline": "${{ matrix.includes.pipeline }}", "url": "${{ matrix.includes.workflowUrl }}" }' > workflow-info.json
-          jq -n 'reduce inputs as $s (.; (.[input_filename|rtrimstr(".json")]) += $s)' *.json > ${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json
-
-      - uses: actions/upload-artifact@v3
+      - name: setup-python
+        uses: actions/setup-python@v5
         with:
-          name: ${{ needs.getdate.outputs.date }}_all_run_dumps
-          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}.tar.gz"
+          python-version: "3.12"
+          cache: "pip"
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ${{ needs.getdate.outputs.date }}_all_run_json
-          path: "${{ matrix.includes.pipeline }}_${{ matrix.includes.workspaceId }}_${{ needs.getdate.outputs.date }}_dump.json"
-
-      - name: Clearup
-        if: ${{ (inputs.remove || true) && !inputs.dryrun }}
+      - name: install-dependencies
         run: |
-          set -euo pipefail
-          STATUS=$(tw -o json runs view -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }} | jq -r '.general.status')
-          if [ "SUCCEEDED" = $STATUS ]; then
-            # Won't delete if run is active
-            tw -o json runs delete -w ${{ matrix.includes.workspaceId }} -i ${{ matrix.includes.workflowId }}
-          else
-            echo "Run has not finished, delete with 'tw -o json runs delete -w ${{ matrix.includes.workspace }} -i ${{ matrix.includes.workflowId }}' when ready."
-          fi
+          pip install -r requirements.txt
 
-  slack:
-    runs-on: ubuntu-latest
-    needs: [getdate, checkrun]
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.getdate.outputs.date }}_all_run_json
-          path: runs
-
-      - name: "Slack"
-        if: ${{ ( github.event_name != 'workflow_dispatch' && inputs.slack ) || true }}
+      - name: finish_workflow
         run: |
-          set -euo pipefail
-          ls -1 runs/*
-          cat runs/* | jq -r --slurp
-          export MESSAGE=$(cat runs/* | jq -r --slurp '(["pipeline", "workspace", "computeEnv", "status", "platform", "nextflow", "revision", "workflowUrl"] | (., map(length*"-"))), (.[] | [.["workflow-info"]["general"]["pipeline"], .["workflow-info"]["general"]["workspace"], .["workflow-launch"]["computeEnv"]["name"], .["workflow"]["status"], .["service-info"]["version"], .["workflow"]["nextflow"]["version"], .["workflow-launch"]["revision"], .["workflow-info"]["general"]["url"]]) | map(.//"-") | @tsv' | column -ts $'\t')
-          echo $MESSAGE
-          curl -X POST -H 'Content-type: application/json' --data "{'text': \"\`\`\`$MESSAGE\`\`\`\"}" ${{ secrets.SLACK_HOOK_URL }}
+          echo python extract_metadata.py \
+            -l DEBUG \
+            -w 34830707738561 \
+            -o workflowData.json \
+            -i $(cat run_details/* | jq -r '.["workflow-info"]["general"]["workflowId"]')

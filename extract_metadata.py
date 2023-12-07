@@ -22,7 +22,6 @@ Example:
 Note: Ensure that the `TOWER_ACCESS_TOKEN` has been set in your environment before running the script.
 """
 
-from seqerakit import seqeraplatform
 import argparse
 import json
 import logging
@@ -30,8 +29,10 @@ import os
 import tarfile
 
 from argparse import Namespace
-from slack_sdk.webhook import WebClient, WebhookClient
 from pathlib import Path
+from seqerakit import seqeraplatform
+from slack_sdk.web import WebClient
+from slack_sdk.webhook import WebhookClient
 from tabulate import tabulate
 from typing import Any, Dict, List
 
@@ -73,6 +74,24 @@ def parse_args() -> Namespace:
         nargs="+",
         help="Seqera Platform workflow ID",
     )
+    parser.add_argument(
+        "-s",
+        "--slack",
+        action="store_true",
+        help="Send Slack message with workflow metadata",
+    )
+    parser.add_argument(
+        "-d",
+        "--delete",
+        action="store_true",
+        help="Delete workflow after recording results. Will only delete successful workflows by default. If --force is true will delete all workflows.",
+    )
+    parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Force delete workflow even if it did not finish successfully",
+    )
     return parser.parse_args()
 
 
@@ -104,8 +123,8 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
     Returns:
         dict: A dictionary where keys are the file names without extension and values are the text. If JSON it will be a dict, if any other it will be a string.
     """
+    extracted_data = {}
     with tarfile.open(tar_file, "r:gz") as tar:
-        extracted_data = {}
         for member in tar.getmembers():
             filename = Path(member.name).stem
             try:
@@ -115,7 +134,8 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
                 extracted_data[filename] = (
                     tar.extractfile(member).read().decode().split("\n")
                 )
-        return extracted_data
+
+    return extracted_data
 
 
 def parse_json(json_data: Dict[str, Any], keys: Dict[str, str]) -> Dict[str, Any]:
@@ -146,6 +166,79 @@ def parse_json(json_data: Dict[str, Any], keys: Dict[str, str]) -> Dict[str, Any
     return update_dict
 
 
+def delete_run_on_platform(
+    seqera: seqeraplatform.SeqeraPlatform,
+    run_info: Dict[str, Any],
+    workspace: str,
+    force: bool = False,
+) -> Dict[str, str | bool] | None:
+    # Create default output:
+    default_output = {
+        "id": run_info["workflow"]["id"],
+        # "workspaceRef": run_info["workflow"]["workspaceRef"],
+        "deleted": False,
+    }
+
+    # Check if run finish and delete if true
+    if run_info["workflow"]["status"] == "SUCCEEDED" or force:
+        try:
+            logging.info(f"Deleting run {run_info['workflow']['id']}")
+            delete_dict = seqera.runs(
+                "delete",
+                "-id",
+                run_info["workflow"]["id"],
+                "-w",
+                workspace,
+                to_json=True,
+            )
+            delete_dict.update({"deleted": True})
+            return delete_dict
+        except:
+            return default_output
+    else:
+        return default_output
+
+
+def send_slack_message(
+    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str]
+) -> None:
+    """
+    Send a Slack message with the workflow metadata as a formatted table.
+
+    Args:
+        extracted_data (list): The list of dictionaries containing the workflow metadata.
+        data_to_send (dict): The dictionary the name of each table element (as keys) with each field within the dictionary to send as a value.
+    Returns:
+        None
+    """
+    parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
+
+    la_mesa = tabulate(parsed_data, headers="keys", tablefmt="simple")
+
+    # Send Slack Message
+    webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
+    # response = webhookclient.send(
+    #     text="```" + la_mesa + "```", headers={"Content-type": "application/json"}
+    # )
+
+    # We can possibly attach the JSON as a file but not supported by API
+    # We might be able to use file.upload API: https://api.slack.com/tutorials/uploading-files-with-python
+    # webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
+    # auth_test = webclient.auth_test()
+    # if not auth_test.data.get("ok", False):
+    #     raise Exception("Invalid Slack token")
+    # file_upload = webclient.files_upload(
+    #     title="My Test Text File",
+    #     filename="test.txt",
+    #     content="Hi there! This is a text file!",
+    # )
+    # file_url = new_file.get("file").get("permalink")
+    # new_message = client.chat_postMessage(
+    #     channel="#random",
+    #     text=f"Here is the file: {file_url}",
+    # )
+
+
 def main() -> None:
     args = parse_args()
     logging.basicConfig(level=args.log_level)
@@ -167,56 +260,26 @@ def main() -> None:
 
     logging.info(f"Workflow metadata written to {args.output}.")
 
-    # for x in extracted_data:
-    #     # Need to add https://github.com/seqeralabs/tower-cli/pull/364 to get all information
-    #     print(x["workflow-info"]["general"]["pipeline"])
-    #     print(x["workflow-info"]["general"]["workspace"])
-    #     print(x["workflow-info"]["general"]["url"])
-    #     print(x["workflow-launch"]["computeEnv"]["name"])
-    #     print(x["workflow"]["status"])
-    #     print(x["service-info"]["version"])
-    #     print(x["workflow"]["nextflow"]["version"])
-    #     print(x["workflow-launch"]["revision"])
+    if args.slack:
+        # Get critical info, flatten and rename to user friendly values
+        data_to_extract = {
+            # "workspace": "workflow-info.general.workspace",
+            # "workflowUrl": "workflow-info.general.url",
+            "pipeline": "workflow.projectName",
+            "workspace": "",
+            "computeEnv": "workflow-launch.computeEnv.name",
+            "status": "workflow.status",
+            "platform": "service-info.version",
+            "nextflow": "workflow.nextflow.version",
+            "revision": "workflow-launch.revision",
+            "id": "workflow.id",
+        }
+        send_slack_message(extracted_data, data_to_extract)
 
-    # Get critical info, flatten and rename to user friendly values
-    data_to_extract = {
-        # "pipeline": "workflow-info.general.pipeline",
-        # "workspace": "workflow-info.general.workspace",
-        # "workflowUrl": "workflow-info.general.url",
-        "name": "workflow-launch.computeEnv.name",
-        "status": "workflow.status",
-        "revision": "workflow-launch.revision",
-        "service_version": "service-info.version",
-        "nextflow_version": "workflow.nextflow.version",
-    }
-    parsed_data = [parse_json(x, data_to_extract) for x in extracted_data]
-
-    la_mesa = tabulate(parsed_data, headers="keys", tablefmt="simple")
-
-    print(la_mesa)
-
-    # Send Slack Message
-    webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
-    response = webhookclient.send(
-        text="```" + la_mesa + "```", headers={"Content-type": "application/json"}
-    )
-
-    # We can possibly attach the JSON as a file but not supported by API
-    # We might be able to use file.upload API: https://api.slack.com/tutorials/uploading-files-with-python
-    # webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
-    # auth_test = webclient.auth_test()
-    # if not auth_test.data.get("ok", False):
-    #     raise Exception("Invalid Slack token")
-    # file_upload = webclient.files_upload(
-    #     title="My Test Text File",
-    #     filename="test.txt",
-    #     content="Hi there! This is a text file!",
-    # )
-    # file_url = new_file.get("file").get("permalink")
-    # new_message = client.chat_postMessage(
-    #     channel="#random",
-    #     text=f"Here is the file: {file_url}",
-    # )
+    # On success, delete if pipeline succeeded
+    if args.delete:
+        for run in extracted_data:
+            delete_run_on_platform(seqera, run, args.workspace, force=args.force)
 
 
 if __name__ == "__main__":
