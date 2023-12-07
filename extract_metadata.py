@@ -125,6 +125,7 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
     Returns:
         dict: A dictionary where keys are the file names without extension and values are the text. If JSON it will be a dict, if any other it will be a string.
     """
+    print([x for x in Path(r".").glob("*")])
     extracted_data = {}
     with tarfile.open(tar_file, "r:gz") as tar:
         for member in tar.getmembers():
