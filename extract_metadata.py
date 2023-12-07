@@ -27,6 +27,7 @@ import json
 import logging
 import os
 import tarfile
+import zipfile
 
 from argparse import Namespace
 from pathlib import Path
@@ -204,7 +205,7 @@ def delete_run_on_platform(
 
 
 def send_slack_message(
-    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str]
+    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str], filepath: Path
 ) -> None:
     """
     Send a Slack message with the workflow metadata as a formatted table.
@@ -212,36 +213,35 @@ def send_slack_message(
     Args:
         extracted_data (list): The list of dictionaries containing the workflow metadata.
         data_to_send (dict): The dictionary the name of each table element (as keys) with each field within the dictionary to send as a value.
+        filepath (str): The path to the JSON file to attach to the Slack message. Can be zipped up for convenience.
     Returns:
         None
     """
     parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
 
     la_mesa = tabulate(parsed_data, headers="keys", tablefmt="simple")
-    print(la_mesa)
 
     # Send Slack Message
-    webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
+    # webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
     # response = webhookclient.send(
     #     text="```" + la_mesa + "```", headers={"Content-type": "application/json"}
     # )
 
     # We can possibly attach the JSON as a file but not supported by API
     # We might be able to use file.upload API: https://api.slack.com/tutorials/uploading-files-with-python
-    # webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
-    # auth_test = webclient.auth_test()
-    # if not auth_test.data.get("ok", False):
-    #     raise Exception("Invalid Slack token")
-    # file_upload = webclient.files_upload(
-    #     title="My Test Text File",
-    #     filename="test.txt",
-    #     content="Hi there! This is a text file!",
-    # )
-    # file_url = new_file.get("file").get("permalink")
-    # new_message = client.chat_postMessage(
-    #     channel="#random",
-    #     text=f"Here is the file: {file_url}",
-    # )
+    webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
+    auth_test = webclient.auth_test()
+    if not auth_test.data.get("ok", False):
+        raise Exception("Invalid Slack token")
+    file_upload = webclient.files_upload_v2(
+        title=filepath.stem,
+        file=filepath,
+        initial_comment="```" + la_mesa + "```",
+        channel="C054QAK3FLZ",
+    )
+
+    if file_upload.status_code != 200:
+        raise Exception("Error with Slack file upload")
 
 
 def main() -> None:
@@ -260,8 +260,15 @@ def main() -> None:
     extracted_data = [extract_workflow_data(tar_file) for tar_file in tar_files]
 
     logging.info("Writing workflow metadata to JSON file...")
+
     with open(args.output, "w") as outfile:
         json.dump(extracted_data, outfile, indent=4)
+
+    logging.info("Zipping workflow metadata JSON file...")
+
+    zipfile_out = Path(args.output).with_suffix(".zip")
+    with zipfile.ZipFile(zipfile_out, "w", zipfile.ZIP_DEFLATED) as outzip:
+        outzip.write(args.output)
 
     logging.info(f"Workflow metadata written to {args.output}.")
 
@@ -279,7 +286,7 @@ def main() -> None:
             "revision": "workflow-launch.revision",
             "id": "workflow.id",
         }
-        send_slack_message(extracted_data, data_to_extract)
+        send_slack_message(extracted_data, data_to_extract, zipfile_out)
 
     # On success, delete if pipeline succeeded
     if args.delete:
