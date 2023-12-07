@@ -188,7 +188,7 @@ jobs:
       - name: finish workflow
         run: |
           echo $(cat run_details/* | jq -cj --slurp '.[].workflowId | @sh')
-          echo python extract_metadata.py \
+          python extract_metadata.py \
             -l DEBUG \
             -w 34830707738561 \
             -o ${{ needs.getdate.outputs.date }}_workflow_data.json \
