@@ -189,5 +189,10 @@ jobs:
           echo python extract_metadata.py \
             -l DEBUG \
             -w 34830707738561 \
-            -o workflowData.json \
+            -o ${{ needs.getdate.outputs.date }}_workflow_data.json \
             -i $(cat run_details/* | jq -r '.["workflow-info"]["general"]["workflowId"]')
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.getdate.outputs.date }}_workflow_data
+          path: ${{ needs.getdate.outputs.date }}_workflow_data.json
