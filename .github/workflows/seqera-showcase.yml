@@ -58,25 +58,25 @@ jobs:
       matrix:
         pipeline:
           - { name: hello, url: hello, latest: true, profiles: "" }
-          - {
-              name: rnaseq,
-              url: nf-core-rnaseq,
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: viralrecon-illumina,
-              url: nf-core-viralrecon-illumina,
-              latest: true,
-              profiles: "test",
-            }
-          - {
-              name: viralrecon-nanopore,
-              url: nf-core-viralrecon-nanopore,
-              latest: true,
-              profiles: "test_nanopore",
-            }
-          - { name: sarek, url: nf-core-sarek, latest: true, profiles: "test" }
+          # - {
+          #     name: rnaseq,
+          #     url: nf-core-rnaseq,
+          #     latest: true,
+          #     profiles: "test",
+          #   }
+          # - {
+          #     name: viralrecon-illumina,
+          #     url: nf-core-viralrecon-illumina,
+          #     latest: true,
+          #     profiles: "test",
+          #   }
+          # - {
+          #     name: viralrecon-nanopore,
+          #     url: nf-core-viralrecon-nanopore,
+          #     latest: true,
+          #     profiles: "test_nanopore",
+          #   }
+          # - { name: sarek, url: nf-core-sarek, latest: true, profiles: "test" }
         compute_env:
           - {
               name: aws,
@@ -84,33 +84,33 @@ jobs:
               workdir: "s3://seqeralabs-showcase",
               workspace_id: "138659136604200",
             }
-          - {
-              name: azure,
-              ref: seqera_azure_virginia_fusion,
-              workdir: "az://seqeralabs-showcase",
-              workspace_id: "138659136604200",
-            }
-          - {
-              name: gcp,
-              ref: seqera_gcp_finland_fusion,
-              workdir: "gs://seqeralabs-showcase-eu-north-1",
-              workspace_id: "138659136604200",
-            }
-        include:
-          - compute_env:
-              {
-                name: aws,
-                ref: seqera_aws_ireland_fusionv2_nvme,
-                workdir: "s3://seqeralabs-showcase",
-                workspace_id: "138659136604200",
-              }
-            pipeline:
-              {
-                name: sentieon,
-                url: nf-sentieon,
-                latest: true,
-                profiles: "test",
-              }
+        #   - {
+        #       name: azure,
+        #       ref: seqera_azure_virginia_fusion,
+        #       workdir: "az://seqeralabs-showcase",
+        #       workspace_id: "138659136604200",
+        #     }
+        #   - {
+        #       name: gcp,
+        #       ref: seqera_gcp_finland_fusion,
+        #       workdir: "gs://seqeralabs-showcase-eu-north-1",
+        #       workspace_id: "138659136604200",
+        #     }
+        # include:
+        #   - compute_env:
+        #       {
+        #         name: aws,
+        #         ref: seqera_aws_ireland_fusionv2_nvme,
+        #         workdir: "s3://seqeralabs-showcase",
+        #         workspace_id: "138659136604200",
+        #       }
+        #     pipeline:
+        #       {
+        #         name: sentieon,
+        #         url: nf-sentieon,
+        #         latest: true,
+        #         profiles: "test",
+        #       }
 
     steps:
       - name: "export unique run name"
