@@ -214,6 +214,7 @@ def send_slack_message(
     parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
 
     la_mesa = tabulate(parsed_data, headers="keys", tablefmt="simple")
+    print(la_mesa)
 
     # Send Slack Message
     webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
