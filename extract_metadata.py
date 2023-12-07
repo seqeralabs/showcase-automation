@@ -110,7 +110,9 @@ def get_runs_dump(
         str: The name of the downloaded tar.gz file.
     """
     output_file = f"{workflow_id}.tar.gz"
-    seqera.runs("dump", "-id", workflow_id, "-o", output_file, "-w", workspace)
+    seqera.runs(
+        "dump", "-id", workflow_id, "-o", output_file, "-w", workspace, json=True
+    )
     return output_file
 
 
@@ -138,7 +140,9 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
     return extracted_data
 
 
-def parse_json(json_data: Dict[str, Any], keys: Dict[str, str]) -> Dict[str, Any]:
+def parse_json(
+    json_data: dict[str, Any] | None, keys: Dict[str, str]
+) -> Dict[str, Any]:
     """
     Parse a JSON object and return the values for the specified keys, including nested keys.
 

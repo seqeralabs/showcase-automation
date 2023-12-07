@@ -194,6 +194,8 @@ jobs:
             -o ${{ needs.getdate.outputs.date }}_workflow_data.json \
             -i $(cat run_details/* | jq -r --slurp 'map(.workflowId) | join(" ")')
 
+          ls -lha
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_workflow_data
