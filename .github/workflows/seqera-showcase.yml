@@ -164,10 +164,19 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v3
         with:
           name: ${{ needs.getdate.outputs.date }}_run_details
           path: run_details
+
+      - name: Install tw CLI
+        run: |
+          set -euo pipefail
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.8.0/tw-linux-x86_64
+          mv tw-* tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/
 
       - name: stage matrix
         id: matrix
