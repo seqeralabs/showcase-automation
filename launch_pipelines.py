@@ -49,10 +49,24 @@ class LaunchConfig(pydantic.BaseModel):
     pipeline: "Pipeline"
     compute_environment: "ComputeEnvironment"
 
-    # def __eq__(self, other):
-    #     if other.__class__ is self.__class__:
-    #         return self.dict() == other.dict()
-    #     return NotImplemented
+    def __eq__(self, other, strict: bool = False) -> bool:
+        # Check classes make sense
+        if other.__class__ is self.__class__:
+            # If strict, check the entire class matches
+            if strict:
+                return self == other
+            # Checks pipeline name and compute env name match
+            # Will ignore if other variables are different.
+            else:
+                return self.pipeline.dict().get("name") == other.pipeline.dict().get(
+                    "name"
+                ) and self.compute_environment.dict().get(
+                    "name"
+                ) == other.compute_environment.dict().get(
+                    "name"
+                )
+        else:
+            return NotImplemented
 
     def launch_pipeline(
         self, seqera: seqeraplatform.SeqeraPlatform, wait: str = "SUBMITTED"
@@ -165,7 +179,7 @@ def parse_args() -> argparse.Namespace:
         type=str,
         required=False,
         nargs="+",
-        help="List of pipeline and compute environment combinations to exclude.",
+        help="List of pipeline and compute environment combinations to exclude. Only checks pipeline and compute environment names.",
     )
     return parser.parse_args()
 
