@@ -342,7 +342,7 @@ def filter_launch_configs(
 
 def launch_pipelines(
     seqera: seqeraplatform.SeqeraPlatform, launch_configs: list[LaunchConfig]
-) -> list[dict[str, str]]:
+) -> list[dict[str, str | bool | None]]:
     """
     Launch a list of pipelines.
 
