@@ -40,6 +40,8 @@ on:
 jobs:
   launch:
     runs-on: ubuntu-latest
+    env:
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
