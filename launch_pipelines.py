@@ -7,6 +7,7 @@ import uuid
 
 from pathlib import Path
 from seqerakit import seqeraplatform
+from seqerakit.seqeraplatform import ResourceCreationError
 
 
 # Globals
@@ -58,11 +59,13 @@ class LaunchConfig(pydantic.BaseModel):
             # Checks pipeline name and compute env name match
             # Will ignore if other variables are different.
             else:
-                return self.pipeline.dict().get("name") == other.pipeline.dict().get(
+                return self.pipeline.model_dump().get(
                     "name"
-                ) and self.compute_environment.dict().get(
+                ) == other.pipeline.model_dump().get(
                     "name"
-                ) == other.compute_environment.dict().get(
+                ) and self.compute_environment.model_dump().get(
+                    "name"
+                ) == other.compute_environment.model_dump().get(
                     "name"
                 )
         else:
@@ -70,7 +73,7 @@ class LaunchConfig(pydantic.BaseModel):
 
     def launch_pipeline(
         self, seqera: seqeraplatform.SeqeraPlatform, wait: str = "SUBMITTED"
-    ) -> dict[str, str]:
+    ) -> dict[str, str | bool | None]:
         """
         Launch a pipeline.
 
@@ -96,6 +99,7 @@ class LaunchConfig(pydantic.BaseModel):
         logging.info(
             f"Launching pipeline {self.pipeline.name} on {self.compute_environment.name}."
         )
+
         try:
             args = [
                 "--workspace",
@@ -118,11 +122,39 @@ class LaunchConfig(pydantic.BaseModel):
                 *args,
                 to_json=True,
             )
+        # If we fail to add the pipeline for a predictable reason we can log and fail
+        except ResourceCreationError as err:
+            logging.info(
+                f"Failed to launch pipeline {run_name}. Logging and proceeding..."
+            )
+            message = "\n".join(err.args)
+            logging.debug(message)
+            # Raise pipeline launch error here:
+            return {
+                "workflowId": None,
+                "workflowUrl": None,
+                "workspaceId": None,
+                "workspaceRef": None,
+                "workflowName": run_name,
+                "computeEnvironment": self.compute_environment.ref,
+                "launchSuccess": False,
+                "error": message,
+            }
         except json.decoder.JSONDecodeError as err:
             logging.error(f"Failed to launch pipeline {run_name}.")
             logging.debug(err.doc)
             # Raise pipeline launch error here:
             raise SeqeraKitError(err.doc)
+
+        # Add pipeline launch info to dict
+        launched_pipeline.update(
+            {
+                "workflowName": run_name,
+                "computeEnvironment": self.compute_environment.ref,
+                "launchSuccess": True,
+                "error": "",
+            }
+        )
         return launched_pipeline
 
 
@@ -156,6 +188,7 @@ def parse_args() -> argparse.Namespace:
         "--compute-envs",
         type=str,
         required=True,
+        nargs="+",
         help="Path to JSON file of compute environments.",
     )
     parser.add_argument(
@@ -163,6 +196,7 @@ def parse_args() -> argparse.Namespace:
         "--pipelines",
         type=str,
         required=True,
+        nargs="+",
         help="Path to JSON file of pipelines.",
     )
     parser.add_argument(
@@ -184,7 +218,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_pipeline_json(path: str) -> list[Pipeline]:
+def read_pipeline_json(paths: list[str]) -> list[Pipeline]:
     """
     Read a JSON file of pipeline details.
 
@@ -195,12 +229,15 @@ def read_pipeline_json(path: str) -> list[Pipeline]:
         list[Pipeline]: A list of pipelines read from JSON.
     """
     logging.info("Reading pipeline details...")
-    with open(path) as pipeline_file:
-        pipelines = json.load(pipeline_file)
-    return [Pipeline(**pipeline) for pipeline in pipelines]
+    pipeline_objects = []
+    for path in paths:
+        with open(path) as pipeline_file:
+            pipelines = json.load(pipeline_file)
+            pipeline_objects.extend([Pipeline(**pipeline) for pipeline in pipelines])
+    return pipeline_objects
 
 
-def read_compute_env_json(path: str) -> list[ComputeEnvironment]:
+def read_compute_env_json(paths: list[str]) -> list[ComputeEnvironment]:
     """
     Read a JSON file of compute environment details.
 
@@ -211,9 +248,14 @@ def read_compute_env_json(path: str) -> list[ComputeEnvironment]:
         list[ComputeEnvironment]: A list of compute environments read from JSON.
     """
     logging.info("Reading compute environment details...")
-    with open(path) as compute_env_file:
-        compute_envs = json.load(compute_env_file)
-    return [ComputeEnvironment(**compute_env) for compute_env in compute_envs]
+    compute_env_objects = []
+    for path in paths:
+        with open(path) as compute_env_file:
+            compute_envs = json.load(compute_env_file)
+            compute_env_objects.extend(
+                [ComputeEnvironment(**compute_env) for compute_env in compute_envs]
+            )
+    return compute_env_objects
 
 
 def read_launch_configs_from_json_files(file_paths: list[str]) -> list[LaunchConfig]:
@@ -331,6 +373,7 @@ def main() -> None:
     complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
     launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
 
+    logging.info("Writing launches to JSON file.")
     with open(args.output, "w") as output_file:
         json.dump(launched_pipelines, output_file, indent=4)
 
