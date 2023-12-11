@@ -7,10 +7,9 @@ import uuid
 
 from pathlib import Path
 from seqerakit import seqeraplatform
-from seqerakit.seqeraplatform import ResourceCreationError
 
 
-# Globals
+## Globals
 # Global UUID for the launch name
 workflow_uuid = str(uuid.uuid4()).replace("-", "")[:15]
 # Global date for the launch name
@@ -122,8 +121,9 @@ class LaunchConfig(pydantic.BaseModel):
                 *args,
                 to_json=True,
             )
-        # If we fail to add the pipeline for a predictable reason we can log and fail
-        except ResourceCreationError as err:
+
+        # If we fail to add the pipeline for a predictable reason we can log and continue
+        except seqeraplatform.ResourceCreationError as err:
             logging.info(
                 f"Failed to launch pipeline {run_name}. Logging and proceeding..."
             )
@@ -140,6 +140,8 @@ class LaunchConfig(pydantic.BaseModel):
                 "launchSuccess": False,
                 "error": message,
             }
+
+        # If we fail to add the pipeline for an unpredictable reason we log and fail
         except json.decoder.JSONDecodeError as err:
             logging.error(f"Failed to launch pipeline {run_name}.")
             logging.debug(err.doc)
