@@ -52,12 +52,6 @@ jobs:
           chmod +x tw
           sudo mv tw /usr/local/bin/
 
-      - name: stage matrix
-        id: matrix
-        run: |
-          set -euo pipefail
-          echo "matrix=$(cat run_details/* | jq -c --slurp .)" >> $GITHUB_OUTPUT
-
       - name: setup python
         uses: actions/setup-python@v5
         with:
