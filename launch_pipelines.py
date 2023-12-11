@@ -10,9 +10,9 @@ from seqerakit import seqeraplatform
 
 # Globals
 # Global UUID for the launch name
-workflow_uuid = uuid.uuid4()
+workflow_uuid = str(uuid.uuid4()).replace("-", "")[:15]
 # Global date for the launch name
-date = datetime.datetime.now().strftime("%Y-%m-%d")
+date = datetime.datetime.now().strftime("%Y%m%d")
 
 
 class SeqeraKitError(Exception):
@@ -40,13 +40,73 @@ class ComputeEnvironment(pydantic.BaseModel):
 
 
 class LaunchConfig(pydantic.BaseModel):
-    """A pipeline and compute environment to launch a pipeline on."""
+    """A pipeline and compute environment to launch a pipeline on
+
+    TODO: Make this a full-fledged class with methods.
+    """
 
     pipeline: "Pipeline"
     compute_environment: "ComputeEnvironment"
 
+    def launch_pipeline(
+        self, seqera: seqeraplatform.SeqeraPlatform, wait: str = "SUBMITTED"
+    ) -> dict[str, str]:
+        """
+        Launch a pipeline.
 
-# Need to use update_forward_refs() to resolve circular references.
+        Args:
+            seqera (seqeraplatform.SeqeraPlatform): A SeqeraPlatform object.
+            wait (str, optional): The wait status for the pipeline. Defaults to "SUBMITTED".
+
+        Raises:
+            SeqeraKitError: If the pipeline fails to launch.
+
+        Returns:
+            dict[str, str]: The launched pipeline.
+        """
+        # Pre-create some variables to make things easier.
+        run_name = "_".join(
+            [self.pipeline.name, self.compute_environment.name, date, workflow_uuid]
+        )
+        profiles = ",".join(self.pipeline.profiles)
+        # It's never good to create a path with string handling but it's the quickest way here.
+        workdir = "/".join([self.compute_environment.workdir, run_name])
+
+        # Launch the pipeline and wait for submission.
+        logging.info(
+            f"Launching pipeline {self.pipeline.name} on {self.compute_environment.name}."
+        )
+        try:
+            args = [
+                "--workspace",
+                self.compute_environment.workspace_id,
+                "--compute-env",
+                self.compute_environment.ref,
+                "--work-dir",
+                self.compute_environment.workdir,
+                "--name",
+                run_name,
+                "--wait",
+                wait,
+                self.pipeline.url,
+            ]
+
+            if self.pipeline.profiles != []:
+                args.extend(["--profile", profiles])
+
+            launched_pipeline = seqera.launch(
+                *args,
+                to_json=True,
+            )
+        except json.decoder.JSONDecodeError as err:
+            logging.error(f"Failed to launch pipeline {run_name}.")
+            logging.debug(err.doc)
+            # Raise pipeline launch error here:
+            raise SeqeraKitError(err.doc)
+        return launched_pipeline
+
+
+# Need to use update_forward_refs() to resolve circular references in Pydantic.
 LaunchConfig.update_forward_refs()
 
 
@@ -211,67 +271,6 @@ def filter_launch_configs(
     return filtered_launch_configs
 
 
-def launch_pipeline(
-    seqera: seqeraplatform.SeqeraPlatform,
-    launch_config: LaunchConfig,
-    wait: str = "SUBMITTED",
-) -> dict[str, str]:
-    """
-    Launch a pipeline.
-
-    Args:
-        seqera (seqeraplatform.SeqeraPlatform): A SeqeraPlatform object.
-        launch_config (LaunchConfig): A LaunchConfig object.
-        wait (str, optional): The wait status for the pipeline. Defaults to "SUBMITTED".
-
-    Raises:
-        SeqeraKitError: If the pipeline fails to launch.
-
-    Returns:
-        dict[str, str]: The launched pipeline.
-    """
-    # Pre-create some variables to make things easier.
-    run_name = "_".join(
-        [
-            launch_config.pipeline.name,
-            launch_config.compute_environment.name,
-            date,
-            str(workflow_uuid),
-        ]
-    )
-    profiles = ",".join(launch_config.pipeline.profiles)
-    # It's never good to create a path with string handling but it's the quickest way here.
-    workdir = "/".join([launch_config.compute_environment.workdir, run_name])
-
-    # Launch the pipeline and wait for submission.
-    logging.info(
-        f"Launching pipeline {launch_config.pipeline.name} on {launch_config.compute_environment.name}."
-    )
-    try:
-        launched_pipeline = seqera.launch(
-            "--workspace",
-            launch_config.compute_environment.workspace_id,
-            "--compute-env",
-            launch_config.compute_environment.ref,
-            "--work-dir",
-            launch_config.compute_environment.workdir,
-            "--name",
-            run_name,
-            "--profile",
-            profiles,
-            "--wait",
-            wait,
-            launch_config.pipeline.url,
-            to_json=True,
-        )
-    except json.decoder.JSONDecodeError as err:
-        logging.error(f"Failed to launch pipeline {run_name}.")
-        logging.debug(err.doc)
-        # Raise pipeline launch error here:
-        raise SeqeraKitError(err.doc)
-    return launched_pipeline
-
-
 def launch_pipelines(
     seqera: seqeraplatform.SeqeraPlatform, launch_configs: list[LaunchConfig]
 ) -> list[dict[str, str]]:
@@ -287,7 +286,7 @@ def launch_pipelines(
     """
     logging.info("Launching pipelines.")
     launched_pipelines = [
-        launch_pipeline(seqera, launch_config) for launch_config in launch_configs
+        launch_config.launch_pipeline(seqera=seqera) for launch_config in launch_configs
     ]
     logging.info("Pipelines launched.")
     return launched_pipelines
