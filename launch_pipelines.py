@@ -8,6 +8,7 @@ import uuid
 from pathlib import Path
 from seqerakit import seqeraplatform
 
+
 # Globals
 # Global UUID for the launch name
 workflow_uuid = str(uuid.uuid4()).replace("-", "")[:15]
@@ -47,6 +48,11 @@ class LaunchConfig(pydantic.BaseModel):
 
     pipeline: "Pipeline"
     compute_environment: "ComputeEnvironment"
+
+    # def __eq__(self, other):
+    #     if other.__class__ is self.__class__:
+    #         return self.dict() == other.dict()
+    #     return NotImplemented
 
     def launch_pipeline(
         self, seqera: seqeraplatform.SeqeraPlatform, wait: str = "SUBMITTED"
@@ -196,21 +202,25 @@ def read_compute_env_json(path: str) -> list[ComputeEnvironment]:
     return [ComputeEnvironment(**compute_env) for compute_env in compute_envs]
 
 
-def read_include_json(path: str) -> list[LaunchConfig]:
+def read_launch_configs_from_json_files(file_paths: list[str]) -> list[LaunchConfig]:
     """
-    Read a JSON file of include details.
+    Read a list of JSON files and create LaunchConfig objects.
 
     Args:
-        path (str): The path to the JSON file.
+        file_paths (List[str]): The paths to the JSON files.
 
     Returns:
-        list[LaunchConfig]: A list of launch configs read from JSON.
+        List[LaunchConfig]: A list of LaunchConfig objects.
     """
-    logging.info("Reading include details...")
-    # check me
-    with open(path) as include_file:
-        include = json.load(include_file)
-    return [LaunchConfig(**launch_config) for launch_config in include]
+    launch_configs = []
+    for file_path in file_paths:
+        logging.info(f"Reading launch config file: {file_path}")
+        with open(file_path) as json_file:
+            in_launch_configs = json.load(json_file)
+            for in_launch_config in in_launch_configs:
+                launch_config = LaunchConfig(**in_launch_config)
+                launch_configs.append(launch_config)
+    return launch_configs
 
 
 def create_launch_config(
@@ -244,8 +254,8 @@ def create_launch_config(
 
 def filter_launch_configs(
     launch_configs: list[LaunchConfig],
-    include: list[LaunchConfig],
-    exclude: list[LaunchConfig],
+    include: list[LaunchConfig] = [],
+    exclude: list[LaunchConfig] = [],
 ) -> list[LaunchConfig]:
     """
     Filter a list of launch configs by include and exclude lists.
@@ -258,16 +268,17 @@ def filter_launch_configs(
     Returns:
         list[LaunchConfig]: A list of filtered launch configs.
     """
-    filtered_launch_configs = []
-    for launch_config in launch_configs:
-        if include:
-            if launch_config in include:
-                filtered_launch_configs.append(launch_config)
-        elif exclude:
-            if launch_config not in exclude:
-                filtered_launch_configs.append(launch_config)
-        else:
-            filtered_launch_configs.append(launch_config)
+
+    logging.info("Adding include launch configs to full set...")
+    full_launch_configs = launch_configs + include
+
+    logging.info("Removing exclude launch configs from full set...")
+    filtered_launch_configs = [
+        launch_config
+        for launch_config in full_launch_configs
+        if launch_config not in exclude
+    ]
+
     return filtered_launch_configs
 
 
@@ -301,10 +312,10 @@ def main() -> None:
     pipelines = read_pipeline_json(args.pipelines)
     compute_envs = read_compute_env_json(args.compute_envs)
     launch_configs = create_launch_config(pipelines, compute_envs)
-    # include = read_include_json(args.include)
-    # exclude = read_exclude_json(args.exclude)
-    # filtered_launch_configs = filter_launch_configs(launch_configs, include, exclude)
-    launched_pipelines = launch_pipelines(seqera, launch_configs)
+    include = read_launch_configs_from_json_files(args.include) if args.include else []
+    exclude = read_launch_configs_from_json_files(args.exclude) if args.exclude else []
+    complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
+    launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
 
     with open(args.output, "w") as output_file:
         json.dump(launched_pipelines, output_file, indent=4)
