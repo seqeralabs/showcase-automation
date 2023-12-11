@@ -9,12 +9,15 @@ be run in an environment where this package is installed and properly configured
 run `pip install seqerakit` in your environment.
 
 Usage:
-    python extract_metadata.py -w <workspace_name> -id <workflow_id> -o <output_file.json>
+    python extract_metadata.py -w <workspace_name> -o <output_file.json> -id <workflow_id> <workflow_id> ...
 
 Arguments:
     -w, --workspace     The name of the workspace on the Seqera Platform.
-    -id, --workflow_id  The unique identifier for the workflow.
+    -id, --workflow_id   The unique identifiers for the workflow.
     -o, --output        The path to the output JSON file that will be created with workflow information.
+    -s, --slack         Send Slack message with workflow metadata
+    -d, --delete        Delete workflow after recording results. Will only delete successful workflows by default. If --force is true will delete all workflows.
+    -f, --force         Force delete workflow even if it did not finish successfully
 
 Example:
     python extract_metadata.py -w myworkspace -id 12345 -o workflow_details.json
