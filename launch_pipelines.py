@@ -16,12 +16,14 @@ date = datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 class SeqeraKitError(Exception):
-    """Base class for exceptions in this module."""
+    """Exception for failure to use Tower CLI."""
 
     pass
 
 
 class Pipeline(pydantic.BaseModel):
+    """A pipeline to launch."""
+
     name: str
     url: str
     latest: bool
@@ -29,6 +31,8 @@ class Pipeline(pydantic.BaseModel):
 
 
 class ComputeEnvironment(pydantic.BaseModel):
+    """A compute environment to launch a pipeline on."""
+
     name: str
     ref: str
     workdir: str
@@ -36,6 +40,8 @@ class ComputeEnvironment(pydantic.BaseModel):
 
 
 class LaunchConfig(pydantic.BaseModel):
+    """A pipeline and compute environment to launch a pipeline on."""
+
     pipeline: "Pipeline"
     compute_environment: "ComputeEnvironment"
 
@@ -45,6 +51,12 @@ LaunchConfig.update_forward_refs()
 
 
 def parse_args() -> argparse.Namespace:
+    """
+    Parse command line arguments.
+
+    Returns:
+        argparse.Namespace: The parsed arguments.
+    """
     parser = argparse.ArgumentParser(
         description="Launch a matrix of pipelines and compute environments."
     )
@@ -93,6 +105,15 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_pipeline_json(path: str) -> list[Pipeline]:
+    """
+    Read a JSON file of pipeline details.
+
+    Args:
+        path (str): The path to the JSON file.
+
+    Returns:
+        list[Pipeline]: A list of pipelines read from JSON.
+    """
     logging.info("Reading pipeline details...")
     with open(path) as pipeline_file:
         pipelines = json.load(pipeline_file)
@@ -100,6 +121,15 @@ def read_pipeline_json(path: str) -> list[Pipeline]:
 
 
 def read_compute_env_json(path: str) -> list[ComputeEnvironment]:
+    """
+    Read a JSON file of compute environment details.
+
+    Args:
+        path (str): The path to the JSON file.
+
+    Returns:
+        list[ComputeEnvironment]: A list of compute environments read from JSON.
+    """
     logging.info("Reading compute environment details...")
     with open(path) as compute_env_file:
         compute_envs = json.load(compute_env_file)
@@ -107,6 +137,15 @@ def read_compute_env_json(path: str) -> list[ComputeEnvironment]:
 
 
 def read_include_json(path: str) -> list[LaunchConfig]:
+    """
+    Read a JSON file of include details.
+
+    Args:
+        path (str): The path to the JSON file.
+
+    Returns:
+        list[LaunchConfig]: A list of launch configs read from JSON.
+    """
     logging.info("Reading include details...")
     # check me
     with open(path) as include_file:
@@ -119,6 +158,17 @@ def create_launch_config(
     compute_envs: list[ComputeEnvironment],
     include: list[LaunchConfig] = [],
 ) -> list[LaunchConfig]:
+    """
+    Create a list of launch configs from a list of pipelines and compute environments.
+
+    Args:
+        pipelines (list[Pipeline]): A list of pipelines.
+        compute_envs (list[ComputeEnvironment]): A list of compute environments.
+        include (list[LaunchConfig], optional): A list of launch configs to include in addition to pipelines * compute envs. Defaults to [].
+
+    Returns:
+        list[LaunchConfig]: A list of launch configs.
+    """
     launch_configs = []
     # Might be able to do this cleaner with itertools.combinations()
     for pipeline in pipelines:
@@ -137,6 +187,17 @@ def filter_launch_configs(
     include: list[LaunchConfig],
     exclude: list[LaunchConfig],
 ) -> list[LaunchConfig]:
+    """
+    Filter a list of launch configs by include and exclude lists.
+
+    Args:
+        launch_configs (list[LaunchConfig]): A list of initial launch configs.
+        include (list[LaunchConfig]): A list of launch configs to include.
+        exclude (list[LaunchConfig]): A list of launch configs to exclude.
+
+    Returns:
+        list[LaunchConfig]: A list of filtered launch configs.
+    """
     filtered_launch_configs = []
     for launch_config in launch_configs:
         if include:
@@ -155,6 +216,20 @@ def launch_pipeline(
     launch_config: LaunchConfig,
     wait: str = "SUBMITTED",
 ) -> dict[str, str]:
+    """
+    Launch a pipeline.
+
+    Args:
+        seqera (seqeraplatform.SeqeraPlatform): A SeqeraPlatform object.
+        launch_config (LaunchConfig): A LaunchConfig object.
+        wait (str, optional): The wait status for the pipeline. Defaults to "SUBMITTED".
+
+    Raises:
+        SeqeraKitError: If the pipeline fails to launch.
+
+    Returns:
+        dict[str, str]: The launched pipeline.
+    """
     # Pre-create some variables to make things easier.
     run_name = "_".join(
         [
@@ -200,6 +275,16 @@ def launch_pipeline(
 def launch_pipelines(
     seqera: seqeraplatform.SeqeraPlatform, launch_configs: list[LaunchConfig]
 ) -> list[dict[str, str]]:
+    """
+    Launch a list of pipelines.
+
+    Args:
+        seqera (seqeraplatform.SeqeraPlatform): A SeqeraPlatform object.
+        launch_configs (list[LaunchConfig]): A list of launch configs.
+
+    Returns:
+        list[dict[str, str]]: A list of launched pipelines.
+    """
     logging.info("Launching pipelines.")
     launched_pipelines = [
         launch_pipeline(seqera, launch_config) for launch_config in launch_configs
