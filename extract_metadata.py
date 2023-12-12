@@ -239,15 +239,24 @@ def delete_run_on_platform(
     if run_info["workflow"]["status"] == "SUCCEEDED" or force:
         try:
             logging.info(f"Deleting run {run_info['workflow']['id']}")
-            delete_dict = seqera.runs(
+
+            args = [
                 "delete",
                 "-id",
                 run_info["workflow"]["id"],
                 "-w",
                 str(run_info["workflow-info"]["workspaceId"]),
+            ]
+
+            if force:
+                args.extend(["--force"])
+
+            delete_dict = seqera.runs(
+                args,
                 to_json=True,
             )
             delete_dict.update({"deleted": True})
+
             return delete_dict
         except:
             return default_output
@@ -337,15 +346,14 @@ def main() -> None:
     if args.slack:
         # Get critical info, flatten and rename to user friendly values
         data_to_extract = {
-            "workspace": "workflow-info.workspaceRef",
-            "workflowUrl": "workflow-info.workflowUrl",
             "pipeline": "workflow.projectName",
+            "workspace": "workflow-info.workspaceRef",
             "computeEnv": "workflow-launch.computeEnv.name",
             "status": "workflow.status",
             "platform": "service-info.version",
             "nextflow": "workflow.nextflow.version",
             "revision": "workflow-launch.revision",
-            "id": "workflow.id",
+            "workflowUrl": "workflow-info.workflowUrl",
         }
         send_slack_message(extracted_data, data_to_extract, zipfile_out)
 

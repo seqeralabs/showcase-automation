@@ -71,7 +71,7 @@ jobs:
         run: |
           python launch_pipelines.py \
             -l DEBUG \
-            -p hello.json \
+            -p hello.json nf-core-pipelines.json \
             -c aws.json azure.json gcp.json \
             -i include.json \
             -e exclude.json \
