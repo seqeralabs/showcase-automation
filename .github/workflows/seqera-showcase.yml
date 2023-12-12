@@ -40,7 +40,12 @@ on:
 jobs:
   launch:
     runs-on: ubuntu-latest
+    env:
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
+      - uses: actions/checkout@v4
       - name: setup python
         uses: actions/setup-python@v5
         with:
@@ -79,8 +84,10 @@ jobs:
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
