@@ -74,7 +74,7 @@ jobs:
 
   clearup-and-delete:
     runs-on: ubuntu-latest
-    needs: [runtest, getdate]
+    needs: [launch]
     environment: ${{ inputs.timer || 'delay60mins' }}
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
