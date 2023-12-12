@@ -116,7 +116,7 @@ jobs:
             -l DEBUG \
             -w $(cat run_details/* | jq -r --slurp 'map(.workspaceId)[0]') \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
-            -i $(cat run_details/* | jq -r --slurp 'map(.workflowId) | join(" ")') \
+            -i run_details/* \
             --slack \
             --delete \
             --force

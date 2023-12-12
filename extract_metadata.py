@@ -30,6 +30,7 @@ import json
 import logging
 import os
 import tarfile
+import tempfile
 import zipfile
 
 from argparse import Namespace
@@ -39,6 +40,7 @@ from slack_sdk.web import WebClient
 from slack_sdk.webhook import WebhookClient
 from tabulate import tabulate
 from typing import Any, Dict, List
+
 
 
 def parse_args() -> Namespace:
@@ -64,15 +66,8 @@ def parse_args() -> Namespace:
         "-o", "--output", type=str, required=True, help="Output filename for JSON file"
     )
     parser.add_argument(
-        "-w",
-        "--workspace",
-        type=str,
-        required=True,
-        help="Seqera Platform workspace name",
-    )
-    parser.add_argument(
-        "-id",
-        "--workflow_id",
+        "-i",
+        "--input",
         type=str,
         required=True,
         nargs="+",
@@ -98,9 +93,39 @@ def parse_args() -> Namespace:
     )
     return parser.parse_args()
 
+def decompress_and_recompress_tar(tar_file: str, data: dict[str, Any], output_file: str) -> str:
+    """
+    Decompresses the tar file, adds a Python dictionary as JSON, and recompresses the tar file.
+
+    Args:
+        tar_file (str): The path to the tar.gz file to decompress and recompress.
+        data (dict): The Python dictionary to add as JSON.
+        output_file (str): The name of the output file to write the recompressed tar.gz file to.
+
+    Returns:
+        str: The path to the recompressed tar.gz file.
+    """
+    # Decompress the tar file
+    with tarfile.open(tar_file, "r:gz") as tar, tempfile.TemporaryDirectory() as tempdir:
+        tempdir_path = Path(tempdir)
+        tar.extractall(tempdir)
+
+        # Add the Python dictionary as JSON
+        data_json = Path(tempdir) / "workflow-info.json"
+        with open(data_json, "w") as json_file:
+            json_file.write(json.dumps(data))
+
+        # Recompress the tar file
+        with tarfile.open(output_file, "w:gz") as tar:
+            for fn in tempdir_path.iterdir():
+                p = tempdir_path.joinpath(fn)
+                tar.add(p, arcname=p.name)
+
+    return output_file
+
 
 def get_runs_dump(
-    seqera: seqeraplatform.SeqeraPlatform, workflow_id: str, workspace: str
+    seqera: seqeraplatform.SeqeraPlatform, workflow: dict[str, Any]
 ) -> str:
     """
     Run the `tw runs dump` command for a given workflow ID within a workspace and download archive as a tar.gz file.
@@ -113,10 +138,22 @@ def get_runs_dump(
     Returns:
         str: The name of the downloaded tar.gz file.
     """
-    output_file = f"{workflow_id}.tar.gz"
+    output_file = f"{workflow["workflowId"]}.tar.gz"
+    tmp_file = f"tmp.{output_file}"
+    logging.debug(f"Using tmpfile: {tmp_file}")
     seqera.runs(
-        "dump", "-id", workflow_id, "-o", output_file, "-w", workspace, json=True
+        "dump",
+        "-id",
+        workflow["workflowId"],
+        "-o",
+        tmp_file,
+        "-w",
+        str(workflow["workspaceId"]),
+        json=True,
     )
+
+    output_file = decompress_and_recompress_tar(tmp_file, workflow, output_file)
+    os.remove(tmp_file)
     return output_file
 
 
@@ -177,13 +214,24 @@ def parse_json(
 def delete_run_on_platform(
     seqera: seqeraplatform.SeqeraPlatform,
     run_info: Dict[str, Any],
-    workspace: str,
     force: bool = False,
 ) -> Dict[str, str | bool] | None:
+    """
+    Delete a workflow run from the Seqera Platform.
+
+    Args:
+        seqera (SeqeraPlatform): An instance of the SeqeraPlatform class that interacts with the Seqera Platform CLI.
+        run_info (dict): The dictionary containing the workflow run information.
+        workspace (str): The name of the workspace in which the workflow was run.
+        force (bool): Force delete workflow even if it did not finish successfully
+
+    Returns:
+        dict: A dictionary containing the workflow ID and a boolean indicating whether the run was deleted.
+    """
     # Create default output:
     default_output = {
         "id": run_info["workflow"]["id"],
-        # "workspaceRef": run_info["workflow"]["workspaceRef"],
+        "workspaceRef": run_info["workflow-info"]["workspaceRef"],
         "deleted": False,
     }
 
@@ -196,7 +244,7 @@ def delete_run_on_platform(
                 "-id",
                 run_info["workflow"]["id"],
                 "-w",
-                workspace,
+                str(run_info["workflow-info"]["workspaceId"]),
                 to_json=True,
             )
             delete_dict.update({"deleted": True})
@@ -222,12 +270,12 @@ def send_slack_message(
     """
     parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
 
-    la_mesa = tabulate(parsed_data, headers="keys", tablefmt="simple")
+    table = tabulate(parsed_data, headers="keys", tablefmt="simple")
 
     # Send Slack Message
     # webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
     # response = webhookclient.send(
-    #     text="```" + la_mesa + "```", headers={"Content-type": "application/json"}
+    #     text="```" + table + "```", headers={"Content-type": "application/json"}
     # )
 
     # We can possibly attach the JSON as a file but not supported by API
@@ -236,10 +284,11 @@ def send_slack_message(
     auth_test = webclient.auth_test()
     if not auth_test.data.get("ok", False):
         raise Exception("Invalid Slack token")
+
     file_upload = webclient.files_upload_v2(
         title=filepath.stem,
         file=filepath.as_posix(),
-        initial_comment="```" + la_mesa + "```",
+        initial_comment="```" + table + "```",
         channel="C054QAK3FLZ",
     )
 
@@ -253,10 +302,20 @@ def main() -> None:
 
     seqera = seqeraplatform.SeqeraPlatform()
 
+    logging.info("Reading workflow details from JSON file...")
+    workflow_details = []
+    for launchJson in args.input:
+        with open(launchJson, "r") as infile:
+            # Be aware this is expecting a list of workflows in the JSON file
+            workflow_details.append(json.load(infile))
+
     logging.info("Getting workflow run data...")
+    # Flattens list of lists containing dicts
     tar_files = [
-        get_runs_dump(seqera, workflowId, args.workspace)
-        for workflowId in args.workflow_id
+        get_runs_dump(seqera, workflow)
+        for workflowList in workflow_details
+        for workflow in workflowList
+        if workflow["launchSuccess"]
     ]
 
     logging.info("Extracting workflow metadata...")
@@ -278,10 +337,9 @@ def main() -> None:
     if args.slack:
         # Get critical info, flatten and rename to user friendly values
         data_to_extract = {
-            # "workspace": "workflow-info.general.workspace",
-            # "workflowUrl": "workflow-info.general.url",
+            "workspace": "workflow-info.workspaceRef",
+            "workflowUrl": "workflow-info.workflowUrl",
             "pipeline": "workflow.projectName",
-            "workspace": "",
             "computeEnv": "workflow-launch.computeEnv.name",
             "status": "workflow.status",
             "platform": "service-info.version",
@@ -294,7 +352,7 @@ def main() -> None:
     # On success, delete if pipeline succeeded
     if args.delete:
         for run in extracted_data:
-            delete_run_on_platform(seqera, run, args.workspace, force=args.force)
+            delete_run_on_platform(seqera, run, force=args.force)
 
 
 if __name__ == "__main__":
