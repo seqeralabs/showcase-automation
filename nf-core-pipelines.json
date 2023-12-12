@@ -11,7 +11,9 @@
         "name": "viralrecon-illumina",
         "url": "nf-core-viralrecon-illumina",
         "latest": true,
-        "profiles": "test"
+        "profiles": [
+            "test"
+        ]
     },
     {
         "name": "viralrecon-nanopore",
