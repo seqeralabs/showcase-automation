@@ -290,8 +290,8 @@ def send_slack_message(
     # We can possibly attach the JSON as a file but not supported by API
     # We might be able to use file.upload API: https://api.slack.com/tutorials/uploading-files-with-python
     webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
-    auth_test = webclient.auth_test()
-    if not auth_test.data.get("ok", False):
+    _auth_test = webclient.auth_test()
+    if not _auth_test.data.get("ok", False):
         raise Exception("Invalid Slack token")
 
     file_upload = webclient.files_upload_v2(
