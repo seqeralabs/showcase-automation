@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pyzw
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+
+.vscode/**
+
+**.tar.gz
+**.zip

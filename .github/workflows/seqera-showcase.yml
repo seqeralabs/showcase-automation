@@ -38,123 +38,39 @@ on:
     - cron: "0 2 * * *"
 
 jobs:
-  getdate:
+  launch:
     runs-on: ubuntu-latest
     steps:
-      - name: "Get current date"
-        run: |
-          set -euo pipefail
-          echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-        id: date
-    outputs:
-      date: ${{ steps.date.outputs.date }}
-
-  runtest:
-    runs-on: ubuntu-latest
-    name: launch.${{ matrix.pipeline.name }}.${{ matrix.compute_env.name }}
-    needs: getdate
-    continue-on-error: true
-    strategy:
-      matrix:
-        pipeline:
-          - { name: hello, url: hello, latest: true, profiles: "" }
-          # - {
-          #     name: rnaseq,
-          #     url: nf-core-rnaseq,
-          #     latest: true,
-          #     profiles: "test",
-          #   }
-          # - {
-          #     name: viralrecon-illumina,
-          #     url: nf-core-viralrecon-illumina,
-          #     latest: true,
-          #     profiles: "test",
-          #   }
-          # - {
-          #     name: viralrecon-nanopore,
-          #     url: nf-core-viralrecon-nanopore,
-          #     latest: true,
-          #     profiles: "test_nanopore",
-          #   }
-          # - { name: sarek, url: nf-core-sarek, latest: true, profiles: "test" }
-        compute_env:
-          - {
-              name: aws,
-              ref: seqera_aws_ireland_fusionv2_nvme,
-              workdir: "s3://seqeralabs-showcase",
-              workspace_id: "138659136604200",
-            }
-        #   - {
-        #       name: azure,
-        #       ref: seqera_azure_virginia_fusion,
-        #       workdir: "az://seqeralabs-showcase",
-        #       workspace_id: "138659136604200",
-        #     }
-        #   - {
-        #       name: gcp,
-        #       ref: seqera_gcp_finland_fusion,
-        #       workdir: "gs://seqeralabs-showcase-eu-north-1",
-        #       workspace_id: "138659136604200",
-        #     }
-        # include:
-        #   - compute_env:
-        #       {
-        #         name: aws,
-        #         ref: seqera_aws_ireland_fusionv2_nvme,
-        #         workdir: "s3://seqeralabs-showcase",
-        #         workspace_id: "138659136604200",
-        #       }
-        #     pipeline:
-        #       {
-        #         name: sentieon,
-        #         url: nf-sentieon,
-        #         latest: true,
-        #         profiles: "test",
-        #       }
-
-    steps:
-      - name: "export unique run name"
-        run: |
-          set -euo pipefail
-          echo "name=${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}_${{ needs.getdate.outputs.date }}_$(uuidgen | cut -c 1-8)" >> $GITHUB_OUTPUT
-          echo "workspace=${{ matrix.compute_env.workspace_id }}" >> $GITHUB_OUTPUT
-        id: id
-
-      - uses: seqeralabs/action-tower-launch@v2
-        if: ${{ !inputs.dryrun }}
-        id: submit-pipeline
+      - name: setup python
+        uses: actions/setup-python@v5
         with:
-          pipeline: ${{ matrix.pipeline.url }}
-          workspace_id: ${{ steps.id.outputs.workspace }}
-          access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
-          compute_env: ${{ matrix.compute_env.ref }}
-          workdir: "${{ matrix.compute_env.workdir }}/work/${{ matrix.pipeline.name }}/work-${{ needs.getdate.outputs.date }}"
-          run_name: "${{ steps.id.outputs.name }}"
-          profiles: ${{ matrix.pipeline.profiles }}
-          wait: SUBMITTED
-          parameters: |
-            {
-                "outdir": "${{ matrix.compute_env.workdir }}/${{ matrix.pipeline.name }}/results-test-${{ needs.getdate.outputs.date }}"
-            }
+          python-version: "3.12"
+          cache: "pip"
 
-      - name: "Store run details as artifact"
-        if: success()
+      - name: install dependencies
         run: |
-          set -euo pipefail
-          echo ${{ steps.submit-pipeline.outputs.json }} | jq -r '. += { "pipeline": "${{ matrix.pipeline.name }}_${{ matrix.compute_env.name }}" }' \
-            >> ${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json
+          pip install -r requirements.txt
+
+      - name: launch_pipelines
+        run: |
+          python launch_pipelines.py \
+            -l DEBUG \
+            -p hello.json \
+            -c aws.json azure.json gcp.json \
+            -i include.json \
+            -e exclude.json \
+            -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v3
-        if: success() || failure()
         with:
-          name: ${{ needs.getdate.outputs.date }}_run_details
-          path: "${{ steps.id.outputs.name }}_${{ steps.id.outputs.workspace }}_${{ needs.getdate.outputs.date }}.json"
+          name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
+          path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
-      - uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ needs.getdate.outputs.date }}_launch_log
-          path: tower_action_*.log
+      - name: Collect matrix
+        id: matrix
+        run: |
+          set -euo pipefail
+          echo "matrix=$(cat ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json)" >> $GITHUB_OUTPUT
 
   clearup-and-delete:
     runs-on: ubuntu-latest
@@ -163,20 +79,17 @@ jobs:
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
 
+    steps:
       - uses: actions/download-artifact@v3
         with:
-          name: ${{ needs.getdate.outputs.date }}_run_details
+          name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
           path: run_details
 
       - name: Install tw CLI
         run: |
           set -euo pipefail
-          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.8.0/tw-linux-x86_64
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.9.1/tw-linux-x86_64
           mv tw-* tw
           chmod +x tw
           sudo mv tw /usr/local/bin/
@@ -202,7 +115,7 @@ jobs:
           python extract_metadata.py \
             -l DEBUG \
             -w $(cat run_details/* | jq -r --slurp 'map(.workspaceId)[0]') \
-            -o ${{ needs.getdate.outputs.date }}_workflow_data.json \
+            -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i $(cat run_details/* | jq -r --slurp 'map(.workflowId) | join(" ")') \
             --slack \
             --delete \
@@ -210,5 +123,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ needs.getdate.outputs.date }}_workflow_data
-          path: ${{ needs.getdate.outputs.date }}_workflow_data.json
+          name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data
+          path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json
