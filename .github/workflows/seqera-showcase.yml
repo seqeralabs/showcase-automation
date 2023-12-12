@@ -46,6 +46,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+
       - name: setup python
         uses: actions/setup-python@v5
         with:
@@ -55,6 +56,18 @@ jobs:
       - name: install dependencies
         run: |
           pip install -r requirements.txt
+
+      - name: install tw cli
+        run: |
+          set -euo pipefail
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.9.1/tw-linux-x86_64
+          mv tw-* tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/
+
+      - name: tower check
+        run: |
+          tw --version
 
       - name: launch_pipelines
         run: |
@@ -100,6 +113,10 @@ jobs:
           mv tw-* tw
           chmod +x tw
           sudo mv tw /usr/local/bin/
+
+      - name: tower check
+        run: |
+          tw --version
 
       - name: stage matrix
         id: matrix
