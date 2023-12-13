@@ -130,7 +130,7 @@ jobs:
             -i run_details/* \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove ) && '--delete' || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.force ) && '--force' || '' }}
+            ${{ ( inputs.force ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v3
         with:
