@@ -252,14 +252,15 @@ def delete_run_on_platform(
                 args.extend(["--force"])
 
             delete_dict = seqera.runs(
-                args,
+                *args,
                 to_json=True,
             )
             delete_dict.update({"deleted": True})
 
             return delete_dict
-        except:
-            return default_output
+        except json.JSONDecodeError as err:
+            logging.error(f"Error deleting run {run_info['workflow']['id']}: {err}")
+            raise err
     else:
         return default_output
 
