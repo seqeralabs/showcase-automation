@@ -76,10 +76,10 @@ jobs:
         run: |
           python launch_pipelines.py \
             -l DEBUG \
-            -p hello.json nf-core-pipelines.json \
-            -c aws.json azure.json gcp.json \
-            --include include.json \
-            --exclude exclude.json \
+            -p pipelines/* \
+            -c compute-envs/* \
+            --include include/* \
+            --exclude exclude/* \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.dryrun ) && '--dryrun' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
