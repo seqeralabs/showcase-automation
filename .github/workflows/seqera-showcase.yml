@@ -128,9 +128,9 @@ jobs:
             -l DEBUG \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
-            ${{ inputs.slack == 'true' && '--slack' || '' }} \
-            ${{ inputs.remove == 'true' && '--delete' || '' }} \
-            ${{ inputs.force == 'true' && '--force' || '' }}
+            ${{ ( inputs.slack || true ) && '--slack' || '' }} \
+            ${{ ( inputs.remove || true ) && '--delete' || '' }} \
+            ${{ ( inputs.force || true ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v3
         with:
