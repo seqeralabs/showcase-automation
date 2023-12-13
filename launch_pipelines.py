@@ -7,6 +7,7 @@ import uuid
 
 from pathlib import Path
 from seqerakit import seqeraplatform
+from seqerakit.helper import parse_launch_block
 
 
 ## Globals
@@ -92,33 +93,44 @@ class LaunchConfig(pydantic.BaseModel):
         )
         profiles = ",".join(self.pipeline.profiles)
         # It's never good to create a path with string handling but it's the quickest way here.
-        workdir = "/".join([self.compute_environment.workdir, run_name])
+        workdir = "/".join(
+            [self.compute_environment.workdir, self.pipeline.name, "work-" + date]
+        )
+
+        outdir = "/".join(
+            [
+                self.compute_environment.workdir,
+                self.pipeline.name,
+                "results-test-" + date,
+            ]
+        )
+
+        # Create params dict
+        params = {"outdir": outdir}
 
         # Launch the pipeline and wait for submission.
         logging.info(
             f"Launching pipeline {self.pipeline.name} on {self.compute_environment.name}."
         )
 
+        args_dict = {
+            "workspace": self.compute_environment.workspace_id,
+            "compute-env": self.compute_environment.ref,
+            "work-dir": workdir,
+            "name": run_name,
+            "wait": wait,
+            "params": params,
+            "pipeline": self.pipeline.url,
+        }
+
+        if self.pipeline.profiles != []:
+            args_dict.update({"profile": profiles})
+
         try:
-            args = [
-                "--workspace",
-                self.compute_environment.workspace_id,
-                "--compute-env",
-                self.compute_environment.ref,
-                "--work-dir",
-                self.compute_environment.workdir,
-                "--name",
-                run_name,
-                "--wait",
-                wait,
-                self.pipeline.url,
-            ]
-
-            if self.pipeline.profiles != []:
-                args.extend(["--profile", profiles])
-
+            # Use seqerakit helper function to construct arguments
+            args_list = parse_launch_block(args_dict)
             launched_pipeline = seqera.launch(
-                *args,
+                *args_list,
                 to_json=True,
             )
 
@@ -375,7 +387,7 @@ def main() -> None:
     complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
     launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
 
-    logging.info("Writing launches to JSON file.")
+    logging.info(f"Writing launches to JSON file {args.output}")
     with open(args.output, "w") as output_file:
         json.dump(launched_pipelines, output_file, indent=4)
 
