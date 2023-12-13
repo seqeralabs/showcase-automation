@@ -126,13 +126,25 @@ class LaunchConfig(pydantic.BaseModel):
         if self.pipeline.profiles != []:
             args_dict.update({"profile": profiles})
 
+        default_response = {
+            "workflowId": None,
+            "workflowUrl": None,
+            "workspaceId": None,
+            "workspaceRef": None,
+            "workflowName": run_name,
+            "computeEnvironment": self.compute_environment.ref,
+            "launchSuccess": False,
+            "error": "",
+        }
+
         try:
             # Use seqerakit helper function to construct arguments
             args_list = parse_launch_block(args_dict)
-            launched_pipeline = seqera.launch(
-                *args_list,
-                to_json=True,
-            )
+            launched_pipeline = seqera.launch(*args_list, to_json=True)
+
+            # If dryrun, return default response
+            if seqera.dryrun:
+                return default_response
 
         # If we fail to add the pipeline for a predictable reason we can log and continue
         except seqeraplatform.ResourceCreationError as err:
@@ -142,16 +154,8 @@ class LaunchConfig(pydantic.BaseModel):
             message = "\n".join(err.args)
             logging.debug(message)
             # Raise pipeline launch error here:
-            return {
-                "workflowId": None,
-                "workflowUrl": None,
-                "workspaceId": None,
-                "workspaceRef": None,
-                "workflowName": run_name,
-                "computeEnvironment": self.compute_environment.ref,
-                "launchSuccess": False,
-                "error": message,
-            }
+            default_response.update({"error": message})
+            return default_response
 
         # If we fail to add the pipeline for an unpredictable reason we log and fail
         except json.decoder.JSONDecodeError as err:
@@ -228,6 +232,12 @@ def parse_args() -> argparse.Namespace:
         required=False,
         nargs="+",
         help="List of pipeline and compute environment combinations to exclude. Only checks pipeline and compute environment names.",
+    )
+    parser.add_argument(
+        "-d",
+        "--dryrun",
+        action="store_true",
+        help="Dry run the pipeline launch without actually launching.",
     )
     return parser.parse_args()
 
@@ -353,7 +363,8 @@ def filter_launch_configs(
 
 
 def launch_pipelines(
-    seqera: seqeraplatform.SeqeraPlatform, launch_configs: list[LaunchConfig]
+    seqera: seqeraplatform.SeqeraPlatform,
+    launch_configs: list[LaunchConfig],
 ) -> list[dict[str, str | bool | None]]:
     """
     Launch a list of pipelines.
@@ -377,7 +388,7 @@ def main() -> None:
     args = parse_args()
     logging.basicConfig(level=logging.INFO)
 
-    seqera = seqeraplatform.SeqeraPlatform()
+    seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun)
 
     pipelines = read_pipeline_json(args.pipelines)
     compute_envs = read_compute_env_json(args.compute_envs)
