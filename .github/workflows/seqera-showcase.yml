@@ -10,7 +10,7 @@ on:
         required: false
       timer:
         description: "Environment"
-        default: delay120mins
+        default: delay60mins
         type: choice
         options:
           - noDelay
@@ -74,12 +74,10 @@ jobs:
 
       - name: launch_pipelines
         run: |
-          echo python launch_pipelines.py \
+          python launch_pipelines.py \
             -l DEBUG \
-            -p hello.json nf-core-pipelines.json \
-            -c aws.json azure.json gcp.json \
-            -i include.json \
-            -e exclude.json \
+            -p hello.json \
+            -c aws.json \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v3
