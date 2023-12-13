@@ -127,10 +127,11 @@ jobs:
 
       - name: finish workflow
         run: |
-          echo python extract_metadata.py \
+          python extract_metadata.py \
             -l DEBUG \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
+            --slack_channel ${{ secrets.SLACK_CHANNEL }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove ) && '--delete' || '' }} \
             ${{ ( inputs.force ) && '--force' || '' }}
