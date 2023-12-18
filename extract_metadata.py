@@ -95,6 +95,7 @@ def parse_args() -> Namespace:
         "--slack_channel",
         type=str,
         help="Slack channel to send message to",
+        default="C054QAK3FLZ"
     )
     return parser.parse_args()
 
@@ -271,7 +272,7 @@ def delete_run_on_platform(
 
 
 def send_slack_message(
-    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str], filepath: Path, slack_channel: str = "C054QAK3FLZ"
+    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str], filepath: Path, slack_channel: str
 ) -> None:
     """
     Send a Slack message with the workflow metadata as a formatted table.
@@ -362,7 +363,7 @@ def main() -> None:
             "revision": "workflow-launch.revision",
             "workflowUrl": "workflow-info.workflowUrl",
         }
-        send_slack_message(extracted_data, data_to_extract, zipfile_out)
+        send_slack_message(extracted_data, data_to_extract, zipfile_out, slack_channel=args.slack_channel)
 
     # On success, delete if pipeline succeeded
     if args.delete:
