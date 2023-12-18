@@ -91,6 +91,11 @@ def parse_args() -> Namespace:
         action="store_true",
         help="Force delete workflow even if it did not finish successfully",
     )
+    parser.add_argument(
+        "--slack_channel",
+        type=str,
+        help="Slack channel to send message to",
+    )
     return parser.parse_args()
 
 def decompress_and_recompress_tar(tar_file: str, data: dict[str, Any], output_file: str) -> str:
@@ -266,7 +271,7 @@ def delete_run_on_platform(
 
 
 def send_slack_message(
-    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str], filepath: Path
+    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str], filepath: Path, slack_channel: str = "C054QAK3FLZ"
 ) -> None:
     """
     Send a Slack message with the workflow metadata as a formatted table.
@@ -275,6 +280,7 @@ def send_slack_message(
         extracted_data (list): The list of dictionaries containing the workflow metadata.
         data_to_send (dict): The dictionary the name of each table element (as keys) with each field within the dictionary to send as a value.
         filepath (str): The path to the JSON file to attach to the Slack message. Can be zipped up for convenience.
+        slack_channel (str): The Slack channel to send the message to.
     Returns:
         None
     """
@@ -299,7 +305,7 @@ def send_slack_message(
         title=filepath.stem,
         file=filepath.as_posix(),
         initial_comment="```" + table + "```",
-        channel="C054QAK3FLZ",
+        channel=slack_channel,
     )
 
     if file_upload.status_code != 200:
