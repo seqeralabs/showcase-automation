@@ -232,7 +232,8 @@ def read_yaml(paths: list[str]) -> list[LaunchConfig]:
     Returns:
         list[Pipeline]: A list of pipelines read from YAML.
     """
-    logging.info("Reading pipeline details...")
+    logging.info("Reading launch details...")
+
     # Pre-populate empty output to fill
     # This saves us doing lots of if/or statements for getting the contents
     objects: dict = {"pipelines": [], "compute-envs": [], "include": [], "exclude": []}
