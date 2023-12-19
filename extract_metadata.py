@@ -251,7 +251,7 @@ def delete_run_on_platform(
                 "-id",
                 run_info["workflow"]["id"],
                 "-w",
-                str(run_info["workflow-info"]["workspaceId"]),
+                str(run_info["workflow-metadata"]["workspaceId"]),
             ]
 
             if force:
@@ -361,7 +361,7 @@ def main() -> None:
             "platform": "service-info.version",
             "nextflow": "workflow.nextflow.version",
             "revision": "workflow-launch.revision",
-            "workflowUrl": "workflow-info.workflowUrl",
+            "workflowUrl": "workflow-metadata.runUrl",
         }
         send_slack_message(extracted_data, data_to_extract, zipfile_out, slack_channel=args.slack_channel)
 
