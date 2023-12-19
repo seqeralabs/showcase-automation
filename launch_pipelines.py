@@ -177,7 +177,7 @@ class LaunchConfig(pydantic.BaseModel):
 
 
 # Need to use update_forward_refs() to resolve circular references in Pydantic.
-LaunchConfig.update_forward_refs()
+LaunchConfig.model_rebuild()
 
 
 def parse_args() -> argparse.Namespace:
