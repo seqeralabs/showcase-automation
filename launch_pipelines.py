@@ -11,7 +11,6 @@ from seqerakit import seqeraplatform
 from seqerakit.helper import parse_launch_block
 import yaml
 
-
 ## Globals
 # Global UUID for the launch name
 workflow_uuid = str(uuid.uuid4()).replace("-", "")[:15]
@@ -209,7 +208,7 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         required=True,
         type=Path,
-        help="The input yaml files to read.",
+        help="The input yaml files to read. Must contain keys 'include', 'exclude', 'compute-envs' and 'pipelines'.",
     )
     parser.add_argument(
         "-d",
