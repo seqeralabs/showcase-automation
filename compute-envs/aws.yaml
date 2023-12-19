@@ -1,0 +1,5 @@
+compute-envs:
+  - name: aws
+    ref: seqera_aws_ireland_fusionv2_nvme
+    workdir: s3://seqeralabs-showcase
+    workspace_id: '138659136604200'

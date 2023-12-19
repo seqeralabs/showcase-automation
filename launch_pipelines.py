@@ -4,10 +4,12 @@ import json
 import logging
 import pydantic
 import uuid
+import yaml
 
 from pathlib import Path
 from seqerakit import seqeraplatform
 from seqerakit.helper import parse_launch_block
+import yaml
 
 
 ## Globals
@@ -242,47 +244,52 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_pipeline_json(paths: list[str]) -> list[Pipeline]:
+def read_pipeline_yaml(paths: list[str]) -> list[Pipeline]:
     """
-    Read a JSON file of pipeline details.
+    Read a YAML file of pipeline details.
 
     Args:
-        path (str): The path to the JSON file.
+        paths (list[str]): The paths to the YAML files.
 
     Returns:
-        list[Pipeline]: A list of pipelines read from JSON.
+        list[Pipeline]: A list of pipelines read from YAML.
     """
     logging.info("Reading pipeline details...")
     pipeline_objects = []
     for path in paths:
         with open(path) as pipeline_file:
-            pipelines = json.load(pipeline_file)
-            pipeline_objects.extend([Pipeline(**pipeline) for pipeline in pipelines])
+            pipelines = yaml.safe_load(pipeline_file)
+            pipeline_objects.extend(
+                [Pipeline(**pipeline) for pipeline in pipelines["pipelines"]]
+            )
     return pipeline_objects
 
 
-def read_compute_env_json(paths: list[str]) -> list[ComputeEnvironment]:
+def read_compute_env_yaml(file_paths: list[str]) -> list[ComputeEnvironment]:
     """
-    Read a JSON file of compute environment details.
+    Read a list of YAML files and create ComputeEnvironment objects.
 
     Args:
-        path (str): The path to the JSON file.
+        file_paths (List[str]): The paths to the YAML files.
 
     Returns:
-        list[ComputeEnvironment]: A list of compute environments read from JSON.
+        List[ComputeEnvironment]: A list of ComputeEnvironment objects.
     """
-    logging.info("Reading compute environment details...")
     compute_env_objects = []
-    for path in paths:
-        with open(path) as compute_env_file:
-            compute_envs = json.load(compute_env_file)
+    for file_path in file_paths:
+        logging.info(f"Reading compute environment file: {file_path}")
+        with open(file_path) as yaml_file:
+            compute_envs = yaml.safe_load(yaml_file)
             compute_env_objects.extend(
-                [ComputeEnvironment(**compute_env) for compute_env in compute_envs]
+                [
+                    ComputeEnvironment(**compute_env)
+                    for compute_env in compute_envs["compute-envs"]
+                ]
             )
     return compute_env_objects
 
 
-def read_launch_configs_from_json_files(file_paths: list[str]) -> list[LaunchConfig]:
+def read_launch_configs_from_yaml(file_paths: list[str]) -> list[LaunchConfig]:
     """
     Read a list of JSON files and create LaunchConfig objects.
 
@@ -298,6 +305,29 @@ def read_launch_configs_from_json_files(file_paths: list[str]) -> list[LaunchCon
         with open(file_path) as json_file:
             in_launch_configs = json.load(json_file)
             for in_launch_config in in_launch_configs:
+                launch_config = LaunchConfig(**in_launch_config)
+                launch_configs.append(launch_config)
+    return launch_configs
+
+
+def read_launch_configs_from_yaml(
+    file_paths: list[str], key: str
+) -> list[LaunchConfig]:
+    """
+    Read a list of YAML files and create LaunchConfig objects.
+
+    Args:
+        file_paths (List[str]): The paths to the YAML files.
+
+    Returns:
+        List[LaunchConfig]: A list of LaunchConfig objects.
+    """
+    launch_configs = []
+    for file_path in file_paths:
+        logging.info(f"Reading launch config file: {file_path}")
+        with open(file_path) as yaml_file:
+            in_launch_configs = yaml.safe_load(yaml_file)
+            for in_launch_config in in_launch_configs[key]:
                 launch_config = LaunchConfig(**in_launch_config)
                 launch_configs.append(launch_config)
     return launch_configs
@@ -390,11 +420,15 @@ def main() -> None:
 
     seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun)
 
-    pipelines = read_pipeline_json(args.pipelines)
-    compute_envs = read_compute_env_json(args.compute_envs)
+    pipelines = read_pipeline_yaml(args.pipelines)
+    compute_envs = read_compute_env_yaml(args.compute_envs)
     launch_configs = create_launch_config(pipelines, compute_envs)
-    include = read_launch_configs_from_json_files(args.include) if args.include else []
-    exclude = read_launch_configs_from_json_files(args.exclude) if args.exclude else []
+    include = (
+        read_launch_configs_from_yaml(args.include, "include") if args.include else []
+    )
+    exclude = (
+        read_launch_configs_from_yaml(args.exclude, "exclude") if args.exclude else []
+    )
     complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
     launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
 
