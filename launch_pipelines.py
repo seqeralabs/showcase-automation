@@ -204,36 +204,12 @@ def parse_args() -> argparse.Namespace:
         "-o", "--output", type=str, required=True, help="Output filename for JSON file."
     )
     parser.add_argument(
-        "-c",
-        "--compute-envs",
-        type=str,
-        required=True,
-        nargs="+",
-        help="Path to JSON file of compute environments.",
-    )
-    parser.add_argument(
-        "-p",
-        "--pipelines",
-        type=str,
-        required=True,
-        nargs="+",
-        help="Path to JSON file of pipelines.",
-    )
-    parser.add_argument(
         "-i",
-        "--include",
-        type=str,
-        required=False,
+        "--inputs",
         nargs="+",
-        help="List of additional pipeline and compute environment combinations to include.",
-    )
-    parser.add_argument(
-        "-e",
-        "--exclude",
-        type=str,
-        required=False,
-        nargs="+",
-        help="List of pipeline and compute environment combinations to exclude. Only checks pipeline and compute environment names.",
+        required=True,
+        type=Path,
+        help="The input yaml files to read.",
     )
     parser.add_argument(
         "-d",
@@ -244,9 +220,11 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_pipeline_yaml(paths: list[str]) -> list[Pipeline]:
+def read_yaml(paths: list[str]) -> list[LaunchConfig]:
     """
-    Read a YAML file of pipeline details.
+    Read multiple YAML files of pipeline, compute-env, include and exclude YAML files
+    then create a list of launch configs from the resulting mix. Assumes keys 'include',
+    'exclude', 'compute-envs' and 'pipelines' are present in the YAML files.
 
     Args:
         paths (list[str]): The paths to the YAML files.
@@ -255,82 +233,33 @@ def read_pipeline_yaml(paths: list[str]) -> list[Pipeline]:
         list[Pipeline]: A list of pipelines read from YAML.
     """
     logging.info("Reading pipeline details...")
-    pipeline_objects = []
+    # Pre-populate empty output to fill
+    # This saves us doing lots of if/or statements for getting the contents
+    objects: dict = {"pipelines": [], "compute-envs": [], "include": [], "exclude": []}
+
     for path in paths:
         with open(path) as pipeline_file:
-            pipelines = yaml.safe_load(pipeline_file)
-            pipeline_objects.extend(
-                [Pipeline(**pipeline) for pipeline in pipelines["pipelines"]]
-            )
-    return pipeline_objects
+            objects = objects | yaml.safe_load(pipeline_file)
 
+    # Get pipeline details from 'pipelines' key
+    pipelines = [Pipeline(**pipeline) for pipeline in objects["pipelines"]]
 
-def read_compute_env_yaml(file_paths: list[str]) -> list[ComputeEnvironment]:
-    """
-    Read a list of YAML files and create ComputeEnvironment objects.
+    # Get compute env details from 'compute-envs' key
+    compute_envs = [
+        ComputeEnvironment(**compute_env) for compute_env in objects["compute-envs"]
+    ]
 
-    Args:
-        file_paths (List[str]): The paths to the YAML files.
+    # Get include and exclude details from 'include' and 'exclude' keys
+    include = [LaunchConfig(**include) for include in objects["include"]]
+    exclude = [LaunchConfig(**exclude) for exclude in objects["exclude"]]
 
-    Returns:
-        List[ComputeEnvironment]: A list of ComputeEnvironment objects.
-    """
-    compute_env_objects = []
-    for file_path in file_paths:
-        logging.info(f"Reading compute environment file: {file_path}")
-        with open(file_path) as yaml_file:
-            compute_envs = yaml.safe_load(yaml_file)
-            compute_env_objects.extend(
-                [
-                    ComputeEnvironment(**compute_env)
-                    for compute_env in compute_envs["compute-envs"]
-                ]
-            )
-    return compute_env_objects
+    # Create matrix of pipeline * compute-envs to LaunchConfigs
+    launch_configs = create_launch_config(pipelines, compute_envs)
 
+    # Add any included LaunchConfigs and remove excluded LaunchConfigs
+    complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
 
-def read_launch_configs_from_yaml(file_paths: list[str]) -> list[LaunchConfig]:
-    """
-    Read a list of JSON files and create LaunchConfig objects.
-
-    Args:
-        file_paths (List[str]): The paths to the JSON files.
-
-    Returns:
-        List[LaunchConfig]: A list of LaunchConfig objects.
-    """
-    launch_configs = []
-    for file_path in file_paths:
-        logging.info(f"Reading launch config file: {file_path}")
-        with open(file_path) as json_file:
-            in_launch_configs = json.load(json_file)
-            for in_launch_config in in_launch_configs:
-                launch_config = LaunchConfig(**in_launch_config)
-                launch_configs.append(launch_config)
-    return launch_configs
-
-
-def read_launch_configs_from_yaml(
-    file_paths: list[str], key: str
-) -> list[LaunchConfig]:
-    """
-    Read a list of YAML files and create LaunchConfig objects.
-
-    Args:
-        file_paths (List[str]): The paths to the YAML files.
-
-    Returns:
-        List[LaunchConfig]: A list of LaunchConfig objects.
-    """
-    launch_configs = []
-    for file_path in file_paths:
-        logging.info(f"Reading launch config file: {file_path}")
-        with open(file_path) as yaml_file:
-            in_launch_configs = yaml.safe_load(yaml_file)
-            for in_launch_config in in_launch_configs[key]:
-                launch_config = LaunchConfig(**in_launch_config)
-                launch_configs.append(launch_config)
-    return launch_configs
+    return complete_launch_configs
 
 
 def create_launch_config(
@@ -420,16 +349,8 @@ def main() -> None:
 
     seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun)
 
-    pipelines = read_pipeline_yaml(args.pipelines)
-    compute_envs = read_compute_env_yaml(args.compute_envs)
-    launch_configs = create_launch_config(pipelines, compute_envs)
-    include = (
-        read_launch_configs_from_yaml(args.include, "include") if args.include else []
-    )
-    exclude = (
-        read_launch_configs_from_yaml(args.exclude, "exclude") if args.exclude else []
-    )
-    complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
+    complete_launch_configs = read_yaml(args.inputs)
+
     launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
 
     logging.info(f"Writing launches to JSON file {args.output}")
