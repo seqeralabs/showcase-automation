@@ -239,7 +239,14 @@ def read_yaml(paths: list[str]) -> list[LaunchConfig]:
 
     for path in paths:
         with open(path) as pipeline_file:
-            objects = objects | yaml.safe_load(pipeline_file)
+            # Extend existing dictionary values (lists)
+            # We grab keys from pre-populated dict so we can do some key checking
+            file_contents = yaml.safe_load(pipeline_file)
+            for key in file_contents.keys():
+                if key in objects.keys():
+                    objects[key] = objects[key] + file_contents[key]
+                else:
+                    raise KeyError(f"Unexpected key in YAML file: {key}")
 
     # Get pipeline details from 'pipelines' key
     pipelines = [Pipeline(**pipeline) for pipeline in objects["pipelines"]]
