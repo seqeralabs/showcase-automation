@@ -1,6 +1,0 @@
-pipelines:
----
-- name: hello
-  url: hello
-  latest: true
-  profiles: []

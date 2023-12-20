@@ -6,10 +6,10 @@ include:
     profiles:
     - test
   compute_environment:
-    name: aws
-    ref: seqera_aws_ireland_fusionv2_nvme
+    ref: aws
+    name: seqera_aws_ireland_fusionv2_nvme
     workdir: s3://seqeralabs-showcase
-    workspace_id: '138659136604200'
+    workspace: '138659136604200'
 - pipeline:
     name: rnaseq
     url: nf-core-rnaseq
@@ -17,10 +17,10 @@ include:
     profiles:
     - test
   compute_environment:
-    name: community-showcase
-    ref: AWS_Batch_Ireland_FusionV2_NVMe
+    ref: community-showcase
+    name: AWS_Batch_Ireland_FusionV2_NVMe
     workdir: s3://nf-tower-bucket
-    workspace_id: '40230138858677'
+    workspace: '40230138858677'
 - pipeline:
     name: viralrecon-illumina
     url: nf-core-viralrecon
@@ -28,7 +28,7 @@ include:
     profiles:
     - test
   compute_environment:
-    name: community-showcase
-    ref: AWS_Batch_Ireland_FusionV2_NVMe
+    ref: community-showcase
+    name: AWS_Batch_Ireland_FusionV2_NVMe
     workdir: s3://nf-tower-bucket
-    workspace_id: '40230138858677'
+    workspace: '40230138858677'

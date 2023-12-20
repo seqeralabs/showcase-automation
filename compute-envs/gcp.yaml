@@ -1,5 +1,5 @@
 compute-envs:
-  - name: gcp
-    ref: seqera_gcp_finland_fusion
+  - ref: gcp
+    name: seqera_gcp_finland_fusion
     workdir: gs://seqeralabs-showcase-eu-north-1
-    workspace_id: '138659136604200'
+    workspace: '138659136604200'

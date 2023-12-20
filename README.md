@@ -49,7 +49,7 @@ A compute environment JSON must specify a list of existing compute environment i
 - `name` (string): User readable name of the compute environment.
 - `ref` (string): The name of the compute environment in the Seqera platform
 - `workdir` (string): The work directory to use for the compute environment. A subdirectory will be created per pipeline run.
-- `workspace_id` (string): The ID of the workspace the compute environment belongs to.
+- `workspace` (string): The ID of the workspace the compute environment belongs to.
 
 ```json
 [
@@ -57,7 +57,7 @@ A compute environment JSON must specify a list of existing compute environment i
         "name": "aws",
         "ref": "seqera_aws_ireland_fusionv2_nvme",
         "workdir": "s3://seqeralabs-showcase",
-        "workspace_id": "138659136604200"
+        "workspace": "138659136604200"
     }
 ]
 ```
@@ -79,7 +79,7 @@ All pipelines and compute environments are combined on an all-by-all basis. If y
             "name": "aws",
             "ref": "seqera_aws_ireland_fusionv2_nvme",
             "workdir": "s3://seqeralabs-showcase",
-            "workspace_id": "138659136604200"
+            "workspace": "138659136604200"
         }
     }
 ]

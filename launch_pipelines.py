@@ -36,10 +36,10 @@ class Pipeline(pydantic.BaseModel):
 class ComputeEnvironment(pydantic.BaseModel):
     """A compute environment to launch a pipeline on."""
 
-    name: str
     ref: str
+    name: str
     workdir: str
-    workspace_id: str
+    workspace: str
 
 
 class LaunchConfig(pydantic.BaseModel):
@@ -90,7 +90,7 @@ class LaunchConfig(pydantic.BaseModel):
         """
         # Pre-create some variables to make things easier.
         run_name = "_".join(
-            [self.pipeline.name, self.compute_environment.name, date, workflow_uuid]
+            [self.pipeline.name, self.compute_environment.ref, date, workflow_uuid]
         )
         profiles = ",".join(self.pipeline.profiles)
         # It's never good to create a path with string handling but it's the quickest way here.
@@ -111,12 +111,12 @@ class LaunchConfig(pydantic.BaseModel):
 
         # Launch the pipeline and wait for submission.
         logging.info(
-            f"Launching pipeline {self.pipeline.name} on {self.compute_environment.name}."
+            f"Launching pipeline {self.pipeline.name} on {self.compute_environment.ref}."
         )
 
         args_dict = {
-            "workspace": self.compute_environment.workspace_id,
-            "compute-env": self.compute_environment.ref,
+            "workspace": self.compute_environment.workspace,
+            "compute-env": self.compute_environment.name,
             "work-dir": workdir,
             "name": run_name,
             "wait": wait,
@@ -133,7 +133,7 @@ class LaunchConfig(pydantic.BaseModel):
             "workspaceId": None,
             "workspaceRef": None,
             "workflowName": run_name,
-            "computeEnvironment": self.compute_environment.ref,
+            "computeEnvironment": self.compute_environment.name,
             "launchSuccess": False,
             "error": "",
         }
@@ -169,7 +169,7 @@ class LaunchConfig(pydantic.BaseModel):
         launched_pipeline.update(
             {
                 "workflowName": run_name,
-                "computeEnvironment": self.compute_environment.ref,
+                "computeEnvironment": self.compute_environment.name,
                 "launchSuccess": True,
                 "error": "",
             }
