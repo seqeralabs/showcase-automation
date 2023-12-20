@@ -4,11 +4,12 @@ import json
 import logging
 import pydantic
 import uuid
+import yaml
 
 from pathlib import Path
 from seqerakit import seqeraplatform
 from seqerakit.helper import parse_launch_block
-
+import yaml
 
 ## Globals
 # Global UUID for the launch name
@@ -35,10 +36,10 @@ class Pipeline(pydantic.BaseModel):
 class ComputeEnvironment(pydantic.BaseModel):
     """A compute environment to launch a pipeline on."""
 
-    name: str
     ref: str
+    name: str
     workdir: str
-    workspace_id: str
+    workspace: str
 
 
 class LaunchConfig(pydantic.BaseModel):
@@ -89,7 +90,7 @@ class LaunchConfig(pydantic.BaseModel):
         """
         # Pre-create some variables to make things easier.
         run_name = "_".join(
-            [self.pipeline.name, self.compute_environment.name, date, workflow_uuid]
+            [self.pipeline.name, self.compute_environment.ref, date, workflow_uuid]
         )
         profiles = ",".join(self.pipeline.profiles)
         # It's never good to create a path with string handling but it's the quickest way here.
@@ -110,12 +111,12 @@ class LaunchConfig(pydantic.BaseModel):
 
         # Launch the pipeline and wait for submission.
         logging.info(
-            f"Launching pipeline {self.pipeline.name} on {self.compute_environment.name}."
+            f"Launching pipeline {self.pipeline.name} on {self.compute_environment.ref}."
         )
 
         args_dict = {
-            "workspace": self.compute_environment.workspace_id,
-            "compute-env": self.compute_environment.ref,
+            "workspace": self.compute_environment.workspace,
+            "compute-env": self.compute_environment.name,
             "work-dir": workdir,
             "name": run_name,
             "wait": wait,
@@ -132,7 +133,7 @@ class LaunchConfig(pydantic.BaseModel):
             "workspaceId": None,
             "workspaceRef": None,
             "workflowName": run_name,
-            "computeEnvironment": self.compute_environment.ref,
+            "computeEnvironment": self.compute_environment.name,
             "launchSuccess": False,
             "error": "",
         }
@@ -168,7 +169,7 @@ class LaunchConfig(pydantic.BaseModel):
         launched_pipeline.update(
             {
                 "workflowName": run_name,
-                "computeEnvironment": self.compute_environment.ref,
+                "computeEnvironment": self.compute_environment.name,
                 "launchSuccess": True,
                 "error": "",
             }
@@ -202,36 +203,12 @@ def parse_args() -> argparse.Namespace:
         "-o", "--output", type=str, required=True, help="Output filename for JSON file."
     )
     parser.add_argument(
-        "-c",
-        "--compute-envs",
-        type=str,
-        required=True,
-        nargs="+",
-        help="Path to JSON file of compute environments.",
-    )
-    parser.add_argument(
-        "-p",
-        "--pipelines",
-        type=str,
-        required=True,
-        nargs="+",
-        help="Path to JSON file of pipelines.",
-    )
-    parser.add_argument(
         "-i",
-        "--include",
-        type=str,
-        required=False,
+        "--inputs",
         nargs="+",
-        help="List of additional pipeline and compute environment combinations to include.",
-    )
-    parser.add_argument(
-        "-e",
-        "--exclude",
-        type=str,
-        required=False,
-        nargs="+",
-        help="List of pipeline and compute environment combinations to exclude. Only checks pipeline and compute environment names.",
+        required=True,
+        type=Path,
+        help="The input yaml files to read. Must contain keys 'include', 'exclude', 'compute-envs' and 'pipelines'.",
     )
     parser.add_argument(
         "-d",
@@ -242,65 +219,54 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_pipeline_json(paths: list[str]) -> list[Pipeline]:
+def read_yaml(paths: list[str]) -> list[LaunchConfig]:
     """
-    Read a JSON file of pipeline details.
+    Read multiple YAML files of pipeline, compute-env, include and exclude YAML files
+    then create a list of launch configs from the resulting mix. Assumes keys 'include',
+    'exclude', 'compute-envs' and 'pipelines' are present in the YAML files.
 
     Args:
-        path (str): The path to the JSON file.
+        paths (list[str]): The paths to the YAML files.
 
     Returns:
-        list[Pipeline]: A list of pipelines read from JSON.
+        list[Pipeline]: A list of pipelines read from YAML.
     """
-    logging.info("Reading pipeline details...")
-    pipeline_objects = []
+    logging.info("Reading launch details...")
+
+    # Pre-populate empty output to fill
+    # This saves us doing lots of if/or statements for getting the contents
+    objects: dict = {"pipelines": [], "compute-envs": [], "include": [], "exclude": []}
+
     for path in paths:
         with open(path) as pipeline_file:
-            pipelines = json.load(pipeline_file)
-            pipeline_objects.extend([Pipeline(**pipeline) for pipeline in pipelines])
-    return pipeline_objects
+            # Extend existing dictionary values (lists)
+            # We grab keys from pre-populated dict so we can do some key checking
+            file_contents = yaml.safe_load(pipeline_file)
+            for key in file_contents.keys():
+                if key in objects.keys():
+                    objects[key] = objects[key] + file_contents[key]
+                else:
+                    raise KeyError(f"Unexpected key in YAML file: {key}")
 
+    # Get pipeline details from 'pipelines' key
+    pipelines = [Pipeline(**pipeline) for pipeline in objects["pipelines"]]
 
-def read_compute_env_json(paths: list[str]) -> list[ComputeEnvironment]:
-    """
-    Read a JSON file of compute environment details.
+    # Get compute env details from 'compute-envs' key
+    compute_envs = [
+        ComputeEnvironment(**compute_env) for compute_env in objects["compute-envs"]
+    ]
 
-    Args:
-        path (str): The path to the JSON file.
+    # Get include and exclude details from 'include' and 'exclude' keys
+    include = [LaunchConfig(**include) for include in objects["include"]]
+    exclude = [LaunchConfig(**exclude) for exclude in objects["exclude"]]
 
-    Returns:
-        list[ComputeEnvironment]: A list of compute environments read from JSON.
-    """
-    logging.info("Reading compute environment details...")
-    compute_env_objects = []
-    for path in paths:
-        with open(path) as compute_env_file:
-            compute_envs = json.load(compute_env_file)
-            compute_env_objects.extend(
-                [ComputeEnvironment(**compute_env) for compute_env in compute_envs]
-            )
-    return compute_env_objects
+    # Create matrix of pipeline * compute-envs to LaunchConfigs
+    launch_configs = create_launch_config(pipelines, compute_envs)
 
+    # Add any included LaunchConfigs and remove excluded LaunchConfigs
+    complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
 
-def read_launch_configs_from_json_files(file_paths: list[str]) -> list[LaunchConfig]:
-    """
-    Read a list of JSON files and create LaunchConfig objects.
-
-    Args:
-        file_paths (List[str]): The paths to the JSON files.
-
-    Returns:
-        List[LaunchConfig]: A list of LaunchConfig objects.
-    """
-    launch_configs = []
-    for file_path in file_paths:
-        logging.info(f"Reading launch config file: {file_path}")
-        with open(file_path) as json_file:
-            in_launch_configs = json.load(json_file)
-            for in_launch_config in in_launch_configs:
-                launch_config = LaunchConfig(**in_launch_config)
-                launch_configs.append(launch_config)
-    return launch_configs
+    return complete_launch_configs
 
 
 def create_launch_config(
@@ -390,12 +356,8 @@ def main() -> None:
 
     seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun)
 
-    pipelines = read_pipeline_json(args.pipelines)
-    compute_envs = read_compute_env_json(args.compute_envs)
-    launch_configs = create_launch_config(pipelines, compute_envs)
-    include = read_launch_configs_from_json_files(args.include) if args.include else []
-    exclude = read_launch_configs_from_json_files(args.exclude) if args.exclude else []
-    complete_launch_configs = filter_launch_configs(launch_configs, include, exclude)
+    complete_launch_configs = read_yaml(args.inputs)
+
     launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
 
     logging.info(f"Writing launches to JSON file {args.output}")

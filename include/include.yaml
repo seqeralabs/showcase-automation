@@ -1,0 +1,34 @@
+include:
+- pipeline:
+    name: sentieon
+    url: nf-sentieon
+    latest: true
+    profiles:
+    - test
+  compute_environment:
+    ref: aws
+    name: seqera_aws_ireland_fusionv2_nvme
+    workdir: s3://seqeralabs-showcase
+    workspace: '138659136604200'
+- pipeline:
+    name: rnaseq
+    url: nf-core-rnaseq
+    latest: true
+    profiles:
+    - test
+  compute_environment:
+    ref: community-showcase
+    name: AWS_Batch_Ireland_FusionV2_NVMe
+    workdir: s3://nf-tower-bucket
+    workspace: '40230138858677'
+- pipeline:
+    name: viralrecon-illumina
+    url: nf-core-viralrecon
+    latest: true
+    profiles:
+    - test
+  compute_environment:
+    ref: community-showcase
+    name: AWS_Batch_Ireland_FusionV2_NVMe
+    workdir: s3://nf-tower-bucket
+    workspace: '40230138858677'
