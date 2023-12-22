@@ -47,7 +47,7 @@ on:
 
   schedule:
     # Every 2am
-    - cron: "30 11 * * *"
+    - cron: "10 13 * * *"
 
 # This workflow launches pipelines in Tower, waits for completion,
 # extracts metadata, and optionally sends Slack notifications.
@@ -68,9 +68,11 @@ jobs:
 
       - name: teststuff
         run: |
-          echo ${{ github.event.inputs }}
+          echo ${{ github.event.inputs.dryrun }}
           echo ${{ github.event_name }}
-          echo ${{ ( github.event.inputs.dryrun == '' || inputs.dryrun ) && '--dryrun' || '' }}
+          echo ${{ ( github.event.inputs.dryrun != '' || inputs.dryrun ) && '--dryrun' || '' }}
+          echo ${{ ( github.event.inputs.slack != '' || inputs.slack ) && '--slack' || '' }}
+          echo ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }}
 
       - name: setup python
         uses: actions/setup-python@v5
@@ -155,9 +157,9 @@ jobs:
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
             --slack_channel ${{ secrets.SLACK_CHANNEL }} \
-            ${{ ( github.event.inputs.slack == '' || inputs.slack ) && '--slack' || '' }} \
-            ${{ ( github.event.inputs.remove == '' || inputs.remove ) && '--delete' || '' }} \
-            ${{ ( github.event.inputs.force == ''|| inputs.force ) && '--force' || '' }}
+            ${{ ( github.event.inputs.slack != '' || inputs.slack ) && '--slack' || '' }} \
+            ${{ ( github.event.inputs.remove != '' || inputs.remove ) && '--delete' || '' }} \
+            ${{ ( github.event.inputs.force != ''|| inputs.force ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v3
         with:
