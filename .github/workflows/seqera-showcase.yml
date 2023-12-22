@@ -66,13 +66,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: teststuff
+      - name: print variables for debugging
         run: |
           echo ${{ github.event.inputs.dryrun }}
           echo ${{ github.event_name }}
-          echo ${{ ( github.event.inputs.dryrun != '' && inputs.dryrun ) && '--dryrun' || '' }}
-          echo ${{ ( github.event.inputs.slack != '' && inputs.slack ) && '--slack' || '' }}
-          echo ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }}
+          echo dryrun: ${{ ( github.event.inputs.dryrun != '' && inputs.dryrun ) && '' || '' }}
+          echo remove: ${{ ( github.event.inputs.remove != '' && inputs.remove ) && '--delete' || '' }}
+          echo slack: ${{ ( github.event.inputs.slack != '' && inputs.slack ) && '--slack' || '' }}
+          echo dryrun: ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }}
 
       - name: setup python
         uses: actions/setup-python@v5
@@ -105,7 +106,7 @@ jobs:
             compute-envs/*.yaml \
             include/*.yaml \
             exclude/*.yaml \
-            ${{ ( github.event.inputs.dryrun == '' || inputs.dryrun ) && '--dryrun' || '' }} \
+            ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v3
@@ -157,9 +158,9 @@ jobs:
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
             --slack_channel ${{ secrets.SLACK_CHANNEL }} \
-            ${{ ( github.event.inputs.slack != '' || inputs.slack ) && '--slack' || '' }} \
-            ${{ ( github.event.inputs.remove != '' || inputs.remove ) && '--delete' || '' }} \
-            ${{ ( github.event.inputs.force != ''|| inputs.force ) && '--force' || '' }}
+            ${{ ( github.event.inputs.slack != '' && inputs.slack ) && '--slack' || '' }} \
+            ${{ ( github.event.inputs.remove != '' && inputs.remove ) && '--delete' || '' }} \
+            ${{ ( github.event.inputs.force != '' && inputs.force ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v3
         with:
