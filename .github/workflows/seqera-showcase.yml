@@ -96,8 +96,8 @@ jobs:
             pipelines/*.yaml \
             compute-envs/*.yaml \
             include/*.yaml \
-            exclude/* \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.dryrun ) && '--dryrun' || '' }} \
+            exclude/*.yaml \
+            ${{ ( github.event.inputs.dryrun != '' || inputs.dryrun ) && '--dryrun' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v3
@@ -149,9 +149,9 @@ jobs:
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
             --slack_channel ${{ secrets.SLACK_CHANNEL }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove ) && '--delete' || '' }} \
-            ${{ ( inputs.force ) && '--force' || '' }}
+            ${{ ( github.event.inputs.slack != '' || inputs.slack ) && '--slack' || '' }} \
+            ${{ ( github.event.inputs.remove != '' || inputs.remove ) && '--delete' || '' }} \
+            ${{ ( github.event.inputs.force != ''|| inputs.force ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v3
         with:
