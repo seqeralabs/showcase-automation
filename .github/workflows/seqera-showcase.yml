@@ -70,8 +70,8 @@ jobs:
         run: |
           echo ${{ github.event.inputs.dryrun }}
           echo ${{ github.event_name }}
-          echo ${{ ( github.event.inputs.dryrun != '' || inputs.dryrun ) && '--dryrun' || '' }}
-          echo ${{ ( github.event.inputs.slack != '' || inputs.slack ) && '--slack' || '' }}
+          echo ${{ ( github.event.inputs.dryrun != '' && inputs.dryrun ) && '--dryrun' || '' }}
+          echo ${{ ( github.event.inputs.slack != '' && inputs.slack ) && '--slack' || '' }}
           echo ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }}
 
       - name: setup python
