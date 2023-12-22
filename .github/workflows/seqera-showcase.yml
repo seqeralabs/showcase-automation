@@ -47,7 +47,7 @@ on:
 
   schedule:
     # Every 2am
-    - cron: "30 11 * * *"
+    - cron: "22 13 * * *"
 
 # This workflow launches pipelines in Tower, waits for completion,
 # extracts metadata, and optionally sends Slack notifications.
@@ -97,7 +97,7 @@ jobs:
             compute-envs/*.yaml \
             include/*.yaml \
             exclude/* \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.dryrun ) && '--dryrun' || '' }} \
+            ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v3
@@ -151,7 +151,7 @@ jobs:
             --slack_channel ${{ secrets.SLACK_CHANNEL }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove ) && '--delete' || '' }} \
-            ${{ ( inputs.force ) && '--force' || '' }}
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.force ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v3
         with:
