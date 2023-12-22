@@ -47,7 +47,7 @@ on:
 
   schedule:
     # Every 2am
-    - cron: "30 13 * * *"
+    - cron: "0 2 * * *"
 
 # This workflow launches pipelines in Tower, waits for completion,
 # extracts metadata, and optionally sends Slack notifications.
