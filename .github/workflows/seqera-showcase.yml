@@ -1,5 +1,12 @@
 name: seqera-showcase-autotest
 run-name: run-pipelines
+# Triggers workflow runs on demand, with schedule, or on push.
+# workflow_dispatch: Manually trigger workflow from Actions tab.
+#   dryrun: Whether to do a dry run without submitting pipeline.
+#   timer: Delay before starting run.
+#   slack: Notify Slack on run completion.
+#   remove/force: Cleanup run after completion.
+# schedule: Cron schedule to trigger runs automatically.
 on:
   workflow_dispatch:
     inputs:
@@ -40,8 +47,17 @@ on:
 
   schedule:
     # Every 2am
-    - cron: "0 2 * * *"
+    - cron: "30 11 * * *"
 
+# This workflow launches pipelines in Tower, waits for completion,
+# extracts metadata, and optionally sends Slack notifications.
+
+# The 'launch' job runs the launch_pipelines.py script to start the
+# pipelines. It uploads the Tower launch data as an artifact.
+
+# The 'clearup-and-delete' job downloads the artifact, runs
+# extract_metadata.py to collect metadata, sends Slack notifications
+# if configured, and deletes the workflow run if configured.
 jobs:
   launch:
     runs-on: ubuntu-latest
