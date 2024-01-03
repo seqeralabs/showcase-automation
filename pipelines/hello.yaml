@@ -3,7 +3,3 @@ pipelines:
     url: hello
     latest: true
     profiles: []
-  - name: doesntexist
-    url: naahhh
-    latest: true
-    profiles: []

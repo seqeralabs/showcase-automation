@@ -197,6 +197,7 @@ def create_failure_to_launch_workflow_data(workflow: dict[str, Any]) -> Dict[str
     """
     return {
         "workflow": {
+            "id": None,
             "projectName": workflow["workflowName"],
             "status": "FAILED_TO_LAUNCH",
             "errorMessage": workflow["error"].strip(),
@@ -285,7 +286,6 @@ def delete_run_on_platform(
             return delete_dict
         except json.JSONDecodeError as err:
             logging.error(f"Error deleting run {run_info['workflow']['id']}: {err}")
-            raise err
     else:
         return default_output
 
