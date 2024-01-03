@@ -186,6 +186,28 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
 
     return extracted_data
 
+def create_failure_to_launch_workflow_data(workflow: dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create a dictionary containing the workflow information for a workflow that failed to launch.
+
+    Args:
+        workflow (dict): The dictionary containing the workflow information.
+    Returns:
+        dict: A dictionary containing the workflow information.
+    """
+    return {
+        "workflow": {
+            "projectName": workflow["workflowName"],
+            "status": "FAILED_TO_LAUNCH",
+            "errorMessage": workflow["error"].strip(),
+        },
+        "workflow-info": workflow,
+        "workflow-launch": {
+            "computeEnv": {
+                "name": workflow["computeEnvironment"]
+            }
+        },
+    }
 
 def parse_json(
     json_data: dict[str, Any] | None, keys: Dict[str, str]
@@ -208,11 +230,8 @@ def parse_json(
             value = json_data
             for part in val.split("."):
                 value = value.get(part)
-                if value is None:
-                    break
-            else:
                 update_dict[key] = value
-        except (KeyError, TypeError):
+        except (KeyError, TypeError, AttributeError):
             update_dict[key] = None
     return update_dict
 
@@ -287,7 +306,7 @@ def send_slack_message(
     """
     parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
 
-    table = tabulate(parsed_data, headers="keys", tablefmt="simple")
+    table = tabulate(parsed_data, headers="keys", tablefmt="simple", missingval="-")
 
     # Send Slack Message
     # webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
@@ -302,15 +321,15 @@ def send_slack_message(
     if not _auth_test.data.get("ok", False):
         raise Exception("Invalid Slack token")
 
-    file_upload = webclient.files_upload_v2(
-        title=filepath.stem,
-        file=filepath.as_posix(),
-        initial_comment="```" + table + "```",
-        channel=slack_channel,
-    )
+    # file_upload = webclient.files_upload_v2(
+    #     title=filepath.stem,
+    #     file=filepath.as_posix(),
+    #     initial_comment="```" + table + "```",
+    #     channel=slack_channel,
+    # )
 
-    if file_upload.status_code != 200:
-        raise Exception("Error with Slack file upload")
+    # if file_upload.status_code != 200:
+    #     raise Exception("Error with Slack file upload")
 
 
 def main() -> None:
@@ -338,8 +357,17 @@ def main() -> None:
     logging.info("Extracting workflow metadata...")
     extracted_data = [extract_workflow_data(tar_file) for tar_file in tar_files]
 
-    logging.info("Writing workflow metadata to JSON file...")
+    # Add failed runs for reporting
+    # Create fake JSON dump
+    failed_runs = [
+        create_failure_to_launch_workflow_data(workflow)
+        for workflowList in workflow_details
+        for workflow in workflowList
+        if not workflow["launchSuccess"]
+    ]
+    extracted_data.extend(failed_runs)
 
+    logging.info("Writing workflow metadata to JSON file...")
     with open(args.output, "w") as outfile:
         json.dump(extracted_data, outfile, indent=4)
 
@@ -362,6 +390,7 @@ def main() -> None:
             "nextflow": "workflow.nextflow.version",
             "revision": "workflow-launch.revision",
             "workflowUrl": "workflow-metadata.runUrl",
+            "error": "workflow.errorMessage"
         }
         send_slack_message(extracted_data, data_to_extract, zipfile_out, slack_channel=args.slack_channel)
 
@@ -373,3 +402,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
