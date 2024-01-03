@@ -93,7 +93,7 @@ jobs:
           python launch_pipelines.py \
             -l DEBUG \
             -i \
-            pipelines/*.yaml \
+            pipelines/hello.yaml \
             compute-envs/*.yaml \
             include/*.yaml \
             exclude/* \
