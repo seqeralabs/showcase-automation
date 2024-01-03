@@ -42,7 +42,6 @@ from tabulate import tabulate
 from typing import Any, Dict, List
 
 
-
 def parse_args() -> Namespace:
     """
     Parse command-line arguments.
@@ -95,11 +94,14 @@ def parse_args() -> Namespace:
         "--slack_channel",
         type=str,
         help="Slack channel to send message to",
-        default="C054QAK3FLZ"
+        default="C054QAK3FLZ",
     )
     return parser.parse_args()
 
-def decompress_and_recompress_tar(tar_file: str, data: dict[str, Any], output_file: str) -> str:
+
+def decompress_and_recompress_tar(
+    tar_file: str, data: dict[str, Any], output_file: str
+) -> str:
     """
     Decompresses the tar file, adds a Python dictionary as JSON, and recompresses the tar file.
 
@@ -112,7 +114,9 @@ def decompress_and_recompress_tar(tar_file: str, data: dict[str, Any], output_fi
         str: The path to the recompressed tar.gz file.
     """
     # Decompress the tar file
-    with tarfile.open(tar_file, "r:gz") as tar, tempfile.TemporaryDirectory() as tempdir:
+    with tarfile.open(
+        tar_file, "r:gz"
+    ) as tar, tempfile.TemporaryDirectory() as tempdir:
         tempdir_path = Path(tempdir)
         tar.extractall(tempdir)
 
@@ -144,7 +148,7 @@ def get_runs_dump(
     Returns:
         str: The name of the downloaded tar.gz file.
     """
-    output_file = f"{workflow["workflowId"]}.tar.gz"
+    output_file = f"{workflow['workflowId']}.tar.gz"
     tmp_file = f"tmp.{output_file}"
     logging.debug(f"Using tmpfile: {tmp_file}")
     seqera.runs(
@@ -186,6 +190,7 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
 
     return extracted_data
 
+
 def create_failure_to_launch_workflow_data(workflow: dict[str, Any]) -> Dict[str, Any]:
     """
     Create a dictionary containing the workflow information for a workflow that failed to launch.
@@ -203,12 +208,9 @@ def create_failure_to_launch_workflow_data(workflow: dict[str, Any]) -> Dict[str
             "errorMessage": workflow["error"].strip(),
         },
         "workflow-info": workflow,
-        "workflow-launch": {
-            "computeEnv": {
-                "name": workflow["computeEnvironment"]
-            }
-        },
+        "workflow-launch": {"computeEnv": {"name": workflow["computeEnvironment"]}},
     }
+
 
 def parse_json(
     json_data: dict[str, Any] | None, keys: Dict[str, str]
@@ -291,7 +293,10 @@ def delete_run_on_platform(
 
 
 def send_slack_message(
-    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str], filepath: Path, slack_channel: str
+    extracted_data: List[Dict["str", Any]],
+    data_to_send: Dict[str, str],
+    filepath: Path,
+    slack_channel: str,
 ) -> None:
     """
     Send a Slack message with the workflow metadata as a formatted table.
@@ -390,9 +395,14 @@ def main() -> None:
             "nextflow": "workflow.nextflow.version",
             "revision": "workflow-launch.revision",
             "workflowUrl": "workflow-metadata.runUrl",
-            "error": "workflow.errorMessage"
+            "error": "workflow.errorMessage",
         }
-        send_slack_message(extracted_data, data_to_extract, zipfile_out, slack_channel=args.slack_channel)
+        send_slack_message(
+            extracted_data,
+            data_to_extract,
+            zipfile_out,
+            slack_channel=args.slack_channel,
+        )
 
     # On success, delete if pipeline succeeded
     if args.delete:
@@ -402,4 +412,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
