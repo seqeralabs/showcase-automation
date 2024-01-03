@@ -321,15 +321,15 @@ def send_slack_message(
     if not _auth_test.data.get("ok", False):
         raise Exception("Invalid Slack token")
 
-    # file_upload = webclient.files_upload_v2(
-    #     title=filepath.stem,
-    #     file=filepath.as_posix(),
-    #     initial_comment="```" + table + "```",
-    #     channel=slack_channel,
-    # )
+    file_upload = webclient.files_upload_v2(
+        title=filepath.stem,
+        file=filepath.as_posix(),
+        initial_comment="```" + table + "```",
+        channel=slack_channel,
+    )
 
-    # if file_upload.status_code != 200:
-    #     raise Exception("Error with Slack file upload")
+    if file_upload.status_code != 200:
+        raise Exception("Error with Slack file upload")
 
 
 def main() -> None:
