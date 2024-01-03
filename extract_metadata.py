@@ -42,7 +42,6 @@ from tabulate import tabulate
 from typing import Any, Dict, List
 
 
-
 def parse_args() -> Namespace:
     """
     Parse command-line arguments.
@@ -95,11 +94,14 @@ def parse_args() -> Namespace:
         "--slack_channel",
         type=str,
         help="Slack channel to send message to",
-        default="C054QAK3FLZ"
+        default="C054QAK3FLZ",
     )
     return parser.parse_args()
 
-def decompress_and_recompress_tar(tar_file: str, data: dict[str, Any], output_file: str) -> str:
+
+def decompress_and_recompress_tar(
+    tar_file: str, data: dict[str, Any], output_file: str
+) -> str:
     """
     Decompresses the tar file, adds a Python dictionary as JSON, and recompresses the tar file.
 
@@ -112,7 +114,9 @@ def decompress_and_recompress_tar(tar_file: str, data: dict[str, Any], output_fi
         str: The path to the recompressed tar.gz file.
     """
     # Decompress the tar file
-    with tarfile.open(tar_file, "r:gz") as tar, tempfile.TemporaryDirectory() as tempdir:
+    with tarfile.open(
+        tar_file, "r:gz"
+    ) as tar, tempfile.TemporaryDirectory() as tempdir:
         tempdir_path = Path(tempdir)
         tar.extractall(tempdir)
 
@@ -144,7 +148,7 @@ def get_runs_dump(
     Returns:
         str: The name of the downloaded tar.gz file.
     """
-    output_file = f"{workflow["workflowId"]}.tar.gz"
+    output_file = f"{workflow['workflowId']}.tar.gz"
     tmp_file = f"tmp.{output_file}"
     logging.debug(f"Using tmpfile: {tmp_file}")
     seqera.runs(
@@ -187,6 +191,27 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
     return extracted_data
 
 
+def create_failure_to_launch_workflow_data(workflow: dict[str, Any]) -> Dict[str, Any]:
+    """
+    Create a dictionary containing the workflow information for a workflow that failed to launch.
+
+    Args:
+        workflow (dict): The dictionary containing the workflow information.
+    Returns:
+        dict: A dictionary containing the workflow information.
+    """
+    return {
+        "workflow": {
+            "id": None,
+            "projectName": workflow["workflowName"],
+            "status": "FAILED_TO_LAUNCH",
+            "errorMessage": workflow["error"].strip(),
+        },
+        "workflow-info": workflow,
+        "workflow-launch": {"computeEnv": {"name": workflow["computeEnvironment"]}},
+    }
+
+
 def parse_json(
     json_data: dict[str, Any] | None, keys: Dict[str, str]
 ) -> Dict[str, Any]:
@@ -208,11 +233,8 @@ def parse_json(
             value = json_data
             for part in val.split("."):
                 value = value.get(part)
-                if value is None:
-                    break
-            else:
                 update_dict[key] = value
-        except (KeyError, TypeError):
+        except (KeyError, TypeError, AttributeError):
             update_dict[key] = None
     return update_dict
 
@@ -266,13 +288,15 @@ def delete_run_on_platform(
             return delete_dict
         except json.JSONDecodeError as err:
             logging.error(f"Error deleting run {run_info['workflow']['id']}: {err}")
-            raise err
     else:
         return default_output
 
 
 def send_slack_message(
-    extracted_data: List[Dict["str", Any]], data_to_send: Dict[str, str], filepath: Path, slack_channel: str
+    extracted_data: List[Dict["str", Any]],
+    data_to_send: Dict[str, str],
+    filepath: Path,
+    slack_channel: str,
 ) -> None:
     """
     Send a Slack message with the workflow metadata as a formatted table.
@@ -287,7 +311,7 @@ def send_slack_message(
     """
     parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
 
-    table = tabulate(parsed_data, headers="keys", tablefmt="simple")
+    table = tabulate(parsed_data, headers="keys", tablefmt="simple", missingval="-")
 
     # Send Slack Message
     # webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
@@ -338,8 +362,17 @@ def main() -> None:
     logging.info("Extracting workflow metadata...")
     extracted_data = [extract_workflow_data(tar_file) for tar_file in tar_files]
 
-    logging.info("Writing workflow metadata to JSON file...")
+    # Add failed runs for reporting
+    # Create fake JSON dump
+    failed_runs = [
+        create_failure_to_launch_workflow_data(workflow)
+        for workflowList in workflow_details
+        for workflow in workflowList
+        if not workflow["launchSuccess"]
+    ]
+    extracted_data.extend(failed_runs)
 
+    logging.info("Writing workflow metadata to JSON file...")
     with open(args.output, "w") as outfile:
         json.dump(extracted_data, outfile, indent=4)
 
@@ -362,8 +395,14 @@ def main() -> None:
             "nextflow": "workflow.nextflow.version",
             "revision": "workflow-launch.revision",
             "workflowUrl": "workflow-metadata.runUrl",
+            "error": "workflow.errorMessage",
         }
-        send_slack_message(extracted_data, data_to_extract, zipfile_out, slack_channel=args.slack_channel)
+        send_slack_message(
+            extracted_data,
+            data_to_extract,
+            zipfile_out,
+            slack_channel=args.slack_channel,
+        )
 
     # On success, delete if pipeline succeeded
     if args.delete:
