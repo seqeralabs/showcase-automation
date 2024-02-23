@@ -243,7 +243,7 @@ def delete_run_on_platform(
     seqera: seqeraplatform.SeqeraPlatform,
     run_info: Dict[str, Any],
     force: bool = False,
-) -> Dict[str, str | bool] | None:
+) -> Dict[str, str | bool]:
     """
     Delete a workflow run from the Seqera Platform.
 
@@ -288,6 +288,7 @@ def delete_run_on_platform(
             return delete_dict
         except json.JSONDecodeError as err:
             logging.error(f"Error deleting run {run_info['workflow']['id']}: {err}")
+        return default_output
     else:
         return default_output
 
@@ -395,7 +396,6 @@ def main() -> None:
             "nextflow": "workflow.nextflow.version",
             "revision": "workflow-launch.revision",
             "workflowUrl": "workflow-metadata.runUrl",
-            "error": "workflow.errorMessage",
         }
         send_slack_message(
             extracted_data,
