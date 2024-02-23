@@ -1,5 +1,6 @@
 compute-envs:
   - ref: slurm
     name: seqera-slurm
-    workDir: /home/tower/work
-    workspace: 138659136604200
+    workdir: /home/tower/work
+    workspace: '138659136604200'
+    profiles: []
