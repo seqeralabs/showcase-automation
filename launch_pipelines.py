@@ -40,6 +40,7 @@ class ComputeEnvironment(pydantic.BaseModel):
     name: str
     workdir: str
     workspace: str
+    profiles: list[str] = []
 
 
 class LaunchConfig(pydantic.BaseModel):
@@ -124,8 +125,10 @@ class LaunchConfig(pydantic.BaseModel):
             "pipeline": self.pipeline.url,
         }
 
-        if self.pipeline.profiles != []:
-            args_dict.update({"profile": profiles})
+        if self.pipeline.profiles != [] or self.compute_environment.profiles != []:
+            args_dict.update(
+                {"profile": self.pipeline.profiles + self.compute_environment.profiles}
+            )
 
         default_response = {
             "workflowId": None,
