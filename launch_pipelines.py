@@ -126,8 +126,15 @@ class LaunchConfig(pydantic.BaseModel):
         }
 
         if self.pipeline.profiles != [] or self.compute_environment.profiles != []:
+            # Create profiles string
             args_dict.update(
-                {"profile": self.pipeline.profiles + self.compute_environment.profiles}
+                {
+                    "profile": str(
+                        ",".join(
+                            self.pipeline.profiles + self.compute_environment.profiles
+                        )
+                    )
+                }
             )
 
         default_response = {
