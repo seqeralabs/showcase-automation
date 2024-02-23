@@ -312,7 +312,7 @@ def send_slack_message(
     """
     parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
 
-    table = tabulate(parsed_data, headers="keys", tablefmt="simple", missingval="-")
+    table = tabulate(parsed_data, headers="keys", tablefmt="plain", missingval="-")
 
     # Send Slack Message
     # webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
@@ -392,9 +392,6 @@ def main() -> None:
             "workspace": "workflow-info.workspaceRef",
             "computeEnv": "workflow-launch.computeEnv.name",
             "status": "workflow.status",
-            "platform": "service-info.version",
-            "nextflow": "workflow.nextflow.version",
-            "revision": "workflow-launch.revision",
             "workflowUrl": "workflow-metadata.runUrl",
         }
         send_slack_message(
