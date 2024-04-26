@@ -94,7 +94,6 @@ class LaunchConfig(pydantic.BaseModel):
         run_name = "_".join(
             [self.pipeline.name, self.compute_environment.ref, date, workflow_uuid]
         )
-        profiles = ",".join(self.pipeline.profiles)
         # It's never good to create a path with string handling but it's the quickest way here.
         workdir = "/".join(
             [self.compute_environment.workdir, self.pipeline.name, "work-" + date]
@@ -105,6 +104,7 @@ class LaunchConfig(pydantic.BaseModel):
                 self.compute_environment.workdir,
                 self.pipeline.name,
                 "results-test-" + date,
+                "/",
             ]
         )
 
