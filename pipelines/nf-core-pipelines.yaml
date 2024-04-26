@@ -20,6 +20,6 @@ pipelines:
   - name: sarek
     url: nf-core-sarek
     latest: true
-    revision: "3.4.1"
+    revision: "3.4.0"
     profiles:
     - test
