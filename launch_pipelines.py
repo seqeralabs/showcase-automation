@@ -31,6 +31,7 @@ class Pipeline(pydantic.BaseModel):
     url: str
     latest: bool
     profiles: list[str]
+    revision: str | None = None
 
 
 class ComputeEnvironment(pydantic.BaseModel):
@@ -124,6 +125,9 @@ class LaunchConfig(pydantic.BaseModel):
             "params": params,
             "pipeline": self.pipeline.url,
         }
+
+        if self.pipeline.revision is not None:
+            args_dict.update({"revision": self.pipeline.revision})
 
         if self.pipeline.profiles != [] or self.compute_environment.profiles != []:
             # Create profiles string
