@@ -31,6 +31,7 @@ class Pipeline(pydantic.BaseModel):
     url: str
     latest: bool
     profiles: list[str]
+    revision: str | None = None
 
 
 class ComputeEnvironment(pydantic.BaseModel):
@@ -93,7 +94,6 @@ class LaunchConfig(pydantic.BaseModel):
         run_name = "_".join(
             [self.pipeline.name, self.compute_environment.ref, date, workflow_uuid]
         )
-        profiles = ",".join(self.pipeline.profiles)
         # It's never good to create a path with string handling but it's the quickest way here.
         workdir = "/".join(
             [self.compute_environment.workdir, self.pipeline.name, "work-" + date]
@@ -104,6 +104,7 @@ class LaunchConfig(pydantic.BaseModel):
                 self.compute_environment.workdir,
                 self.pipeline.name,
                 "results-test-" + date,
+                "/",
             ]
         )
 
@@ -124,6 +125,9 @@ class LaunchConfig(pydantic.BaseModel):
             "params": params,
             "pipeline": self.pipeline.url,
         }
+
+        if self.pipeline.revision is not None:
+            args_dict.update({"revision": self.pipeline.revision})
 
         if self.pipeline.profiles != [] or self.compute_environment.profiles != []:
             # Create profiles string
