@@ -104,9 +104,12 @@ class LaunchConfig(pydantic.BaseModel):
                 self.compute_environment.workdir,
                 self.pipeline.name,
                 "results-test-" + date,
-                "/",
             ]
         )
+
+        # Add trailing slash to outdir if it doesn't exist
+        if not outdir.endswith("/"):
+            outdir += "/"
 
         # Create params dict
         params = {"outdir": outdir}
