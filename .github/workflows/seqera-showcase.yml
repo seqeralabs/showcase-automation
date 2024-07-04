@@ -106,8 +106,8 @@ jobs:
           python launch_pipelines.py \
             -l DEBUG \
             -i \
-            pipelines/*.yaml \
-            compute-envs/*.yaml \
+            pipelines/hello.yaml \
+            compute-envs/aws.yaml \
             include/*.yaml \
             exclude/* \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.pre_run ) && format('--pre_run {0}', inputs.pre_run) || '' }} \
