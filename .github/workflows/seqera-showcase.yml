@@ -44,6 +44,16 @@ on:
         default: false
         type: boolean
         required: false
+      pre_run:
+        description: Pre-run command
+        default: ""
+        type: string
+        required: false
+      config:
+        description: Nextflow config to add
+        default: ""
+        type: string
+        required: false
 
   schedule:
     # Every 2am
@@ -100,6 +110,8 @@ jobs:
             compute-envs/*.yaml \
             include/*.yaml \
             exclude/* \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.pre_run ) && format('--pre_run "{0}"', inputs.pre_run) || '' }} \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.config ) && format('--config "{0}"', inputs.config) || '' }} \
             ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 

@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import pydantic
+import tempfile
 import uuid
 import yaml
 
@@ -31,6 +32,8 @@ class Pipeline(pydantic.BaseModel):
     url: str
     latest: bool
     profiles: list[str]
+    config: str | None = None
+    pre_run: str | None = None
     revision: str | None = None
 
 
@@ -45,10 +48,7 @@ class ComputeEnvironment(pydantic.BaseModel):
 
 
 class LaunchConfig(pydantic.BaseModel):
-    """A pipeline and compute environment to launch a pipeline on
-
-    TODO: Make this a full-fledged class with methods.
-    """
+    """A pipeline and compute environment to launch a pipeline on."""
 
     pipeline: "Pipeline"
     compute_environment: "ComputeEnvironment"
@@ -144,6 +144,20 @@ class LaunchConfig(pydantic.BaseModel):
                 }
             )
 
+        if self.pipeline.config is not None:
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".config"
+            ) as temp_config_file:
+                temp_config_file.write(self.pipeline.config)
+                args_dict.update({"config": temp_config_file.name})
+
+        if self.pipeline.pre_run is not None:
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".sh"
+            ) as temp_prerun_file:
+                temp_prerun_file.write(self.pipeline.pre_run)
+                args_dict.update({"pre-run": temp_prerun_file.name})
+
         default_response = {
             "workflowId": None,
             "workflowUrl": None,
@@ -228,6 +242,18 @@ def parse_args() -> argparse.Namespace:
         help="The input yaml files to read. Must contain keys 'include', 'exclude', 'compute-envs' and 'pipelines'.",
     )
     parser.add_argument(
+        "--pre_run",
+        type=str,
+        help="Pre-run script to run before launching the pipeline.",
+        required=False,
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        help="Config file to use for the pipeline.",
+        required=False,
+    )
+    parser.add_argument(
         "-d",
         "--dryrun",
         action="store_true",
@@ -236,7 +262,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_yaml(paths: list[str]) -> list[LaunchConfig]:
+def read_yaml(
+    paths: list[str], pre_run: str | None = None, config: str | None = None
+) -> list[LaunchConfig]:
     """
     Read multiple YAML files of pipeline, compute-env, include and exclude YAML files
     then create a list of launch configs from the resulting mix. Assumes keys 'include',
@@ -244,6 +272,8 @@ def read_yaml(paths: list[str]) -> list[LaunchConfig]:
 
     Args:
         paths (list[str]): The paths to the YAML files.
+        pre_run (str, optional): Pre-run script to run before launching the pipeline. Defaults to None.
+        config (str, optional): Config file to use for the pipeline. Defaults to None.
 
     Returns:
         list[Pipeline]: A list of pipelines read from YAML.
@@ -267,6 +297,16 @@ def read_yaml(paths: list[str]) -> list[LaunchConfig]:
 
     # Get pipeline details from 'pipelines' key
     pipelines = [Pipeline(**pipeline) for pipeline in objects["pipelines"]]
+
+    # If command line pre-run is enabled, overwrite all pre-run values
+    if pre_run is not None:
+        for pipeline in pipelines:
+            pipeline.pre_run = pre_run
+
+    # If command line config is enabled, overwrite all pre-run values
+    if config is not None:
+        for pipeline in pipelines:
+            pipeline.config = config
 
     # Get compute env details from 'compute-envs' key
     compute_envs = [
@@ -373,7 +413,7 @@ def main() -> None:
 
     seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun)
 
-    complete_launch_configs = read_yaml(args.inputs)
+    complete_launch_configs = read_yaml(args.inputs, args.pre_run, args.config)
 
     launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
 
