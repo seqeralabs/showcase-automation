@@ -106,10 +106,8 @@ jobs:
           python launch_pipelines.py \
             -l DEBUG \
             -i \
-            pipelines/*.yaml \
-            compute-envs/*.yaml \
-            include/*.yaml \
-            exclude/* \
+            pipelines/staging*.yaml \
+            compute-envs/staging*.yaml \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.pre_run ) && format('--pre_run "{0}"', inputs.pre_run) || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.config ) && format('--config "{0}"', inputs.config) || '' }} \
             ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }} \
