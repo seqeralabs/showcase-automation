@@ -1,0 +1,174 @@
+name: seqera-showcase-autotest
+run-name: run-pipelines
+# Triggers workflow runs on demand, with schedule, or on push.
+# workflow_dispatch: Manually trigger workflow from Actions tab.
+#   dryrun: Whether to do a dry run without submitting pipeline.
+#   timer: Delay before starting run.
+#   slack: Notify Slack on run completion.
+#   remove/force: Cleanup run after completion.
+# schedule: Cron schedule to trigger runs automatically.
+on:
+  workflow_dispatch:
+    inputs:
+      dryrun:
+        description: "Dryrun (do not submit pipeline)"
+        default: false
+        type: boolean
+        required: false
+      timer:
+        description: "Environment"
+        default: delay60mins
+        type: choice
+        options:
+          - noDelay
+          - delay1mins
+          - delay5mins
+          - delay15mins
+          - delay30mins
+          - delay60mins
+          - delay120mins
+          - delay360mins
+          - waitForReviewer
+      slack:
+        description: Slack hook
+        type: boolean
+        required: false
+        default: true
+      remove:
+        description: Delete run
+        default: true
+        type: boolean
+        required: false
+      force:
+        description: Force delete run
+        default: false
+        type: boolean
+        required: false
+      pre_run:
+        description: Pre-run command
+        default: ""
+        type: string
+        required: false
+      config:
+        description: Nextflow config to add
+        default: ""
+        type: string
+        required: false
+
+  # schedule:
+  #   # Every 2am
+  #   - cron: "0 2 * * *"
+
+env:
+  TOWER_API_ENDPOINT: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
+
+# This workflow launches pipelines in Tower, waits for completion,
+# extracts metadata, and optionally sends Slack notifications.
+
+# The 'launch' job runs the launch_pipelines.py script to start the
+# pipelines. It uploads the Tower launch data as an artifact.
+
+# The 'clearup-and-delete' job downloads the artifact, runs
+# extract_metadata.py to collect metadata, sends Slack notifications
+# if configured, and deletes the workflow run if configured.
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    env:
+      TOWER_ACCESS_TOKEN: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: install tw cli
+        run: |
+          set -euo pipefail
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.9.2/tw-linux-x86_64
+          mv tw-* tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/
+
+      - name: tower check
+        run: |
+          tw --version
+
+      - name: launch_pipelines
+        run: |
+          python launch_pipelines.py \
+            -l DEBUG \
+            -i \
+            pipelines/*.yaml \
+            compute-envs/*.yaml \
+            include/*.yaml \
+            exclude/* \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.pre_run ) && format('--pre_run "{0}"', inputs.pre_run) || '' }} \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.config ) && format('--config "{0}"', inputs.config) || '' }} \
+            ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }} \
+            -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
+          path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
+
+  clearup-and-delete:
+    runs-on: ubuntu-latest
+    needs: [launch]
+    environment: ${{ inputs.timer || 'delay60mins' }}
+    env:
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
+          path: run_details
+
+      - name: Install tw CLI
+        run: |
+          set -euo pipefail
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.9.2/tw-linux-x86_64
+          mv tw-* tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/
+
+      - name: tower check
+        run: |
+          tw --version
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: finish workflow
+        run: |
+          python extract_metadata.py \
+            -l DEBUG \
+            -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
+            -i run_details/* \
+            --slack_channel ${{ secrets.SLACK_CHANNEL }} \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }} \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove ) && '--delete' || '' }} \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.force ) && '--force' || '' }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data
+          path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json
