@@ -1,4 +1,4 @@
-name: seqera-showcase-autotest
+name: seqera-showcase-autotest-production
 run-name: run-pipelines
 # Triggers workflow runs on demand, with schedule, or on push.
 # workflow_dispatch: Manually trigger workflow from Actions tab.
