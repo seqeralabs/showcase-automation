@@ -28,6 +28,7 @@ on:
           - delay60mins
           - delay120mins
           - delay360mins
+          - delay720mins
           - waitForReviewer
       slack:
         description: Slack hook
