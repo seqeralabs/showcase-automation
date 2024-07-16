@@ -37,7 +37,6 @@ from argparse import Namespace
 from pathlib import Path
 from seqerakit import seqeraplatform
 from slack_sdk.web import WebClient
-from slack_sdk.webhook import WebhookClient
 from tabulate import tabulate
 from typing import Any, Dict, List
 

@@ -77,17 +77,17 @@ Example:
 
 ```yaml
 include:
-- pipeline:
-    name: sentieon
-    url: nf-sentieon
-    latest: true
-    profiles:
-    - test
-  compute_environment:
-    ref: aws
-    name: seqera_aws_ireland_fusionv2_nvme
-    workdir: s3://seqeralabs-showcase
-    workspace: '138659136604200'
+  - pipeline:
+      name: sentieon
+      url: nf-sentieon
+      latest: true
+      profiles:
+        - test
+    compute_environment:
+      ref: aws
+      name: seqera_aws_ireland_fusionv2_nvme
+      workdir: s3://seqeralabs-showcase
+      workspace: '138659136604200'
 ```
 
 #### `exclude`

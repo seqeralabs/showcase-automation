@@ -28,6 +28,7 @@ on:
           - delay60mins
           - delay120mins
           - delay360mins
+          - delay720mins
           - waitForReviewer
       slack:
         description: Slack hook
@@ -106,10 +107,8 @@ jobs:
           python launch_pipelines.py \
             -l DEBUG \
             -i \
-            pipelines/*.yaml \
-            compute-envs/*.yaml \
-            include/*.yaml \
-            exclude/* \
+            pipelines/staging*.yaml \
+            compute-envs/staging*.yaml \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.pre_run ) && format('--pre_run "{0}"', inputs.pre_run) || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.config ) && format('--config "{0}"', inputs.config) || '' }} \
             ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }} \
@@ -125,7 +124,7 @@ jobs:
     needs: [launch]
     environment: ${{ inputs.timer || 'delay60mins' }}
     env:
-      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      TOWER_ACCESS_TOKEN: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
     steps:
