@@ -3,19 +3,19 @@ pipelines:
     url: nf-core-rnaseq
     latest: true
     profiles:
-    - test
+      - test
   - name: viralrecon-illumina
     url: nf-core-viralrecon-illumina
     latest: true
     profiles:
-    - test
+      - test
   - name: viralrecon-nanopore
     url: nf-core-viralrecon-nanopore
     latest: true
     profiles:
-    - test
+      - test
   - name: sarek
     url: nf-core-sarek
     latest: true
     profiles:
-    - test
+      - test
