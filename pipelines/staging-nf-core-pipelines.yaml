@@ -3,19 +3,19 @@ pipelines:
     url: nf-core-rnaseq-staging
     latest: true
     profiles:
-      - test
+      - test_full
   - name: viralrecon-illumina
     url: nf-core-viralrecon-illumina-staging
     latest: true
     profiles:
-      - test
+      - test_full
   - name: viralrecon-nanopore
     url: nf-core-viralrecon-nanopore-staging
     latest: true
     profiles:
-      - test
+      - test_full
   - name: sarek
     url: nf-core-sarek-staging
     latest: true
     profiles:
-      - test
+      - test_full

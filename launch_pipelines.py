@@ -103,7 +103,8 @@ class LaunchConfig(pydantic.BaseModel):
             [
                 self.compute_environment.workdir,
                 self.pipeline.name,
-                "results-test-" + date,
+                "-".join(self.pipeline.profiles),
+                "results-" + date,
             ]
         )
 
