@@ -260,7 +260,7 @@ def parse_args() -> argparse.Namespace:
         required=False,
     )
     parser.add_argument(
-        "--launch_container",
+        "--launch-container",
         type=str,
         help="Container to use for the pipeline.",
         required=False,
