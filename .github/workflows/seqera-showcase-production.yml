@@ -98,7 +98,7 @@ jobs:
       - name: install tw cli
         run: |
           set -euo pipefail
-          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.10.0/tw-linux-x86_64
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.10.1/tw-linux-x86_64
           mv tw-* tw
           chmod +x tw
           sudo mv tw /usr/local/bin/
