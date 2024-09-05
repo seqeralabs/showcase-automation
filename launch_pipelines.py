@@ -10,7 +10,6 @@ import yaml
 from pathlib import Path
 from seqerakit import seqeraplatform
 from seqerakit.helper import parse_launch_block
-import yaml
 
 ## Globals
 # Global UUID for the launch name
@@ -75,7 +74,10 @@ class LaunchConfig(pydantic.BaseModel):
             return NotImplemented
 
     def launch_pipeline(
-        self, seqera: seqeraplatform.SeqeraPlatform, wait: str = "SUBMITTED"
+        self,
+        seqera: seqeraplatform.SeqeraPlatform,
+        wait: str = "SUBMITTED",
+        launch_container=None,
     ) -> dict[str, str | bool | None]:
         """
         Launch a pipeline.
@@ -83,6 +85,7 @@ class LaunchConfig(pydantic.BaseModel):
         Args:
             seqera (seqeraplatform.SeqeraPlatform): A SeqeraPlatform object.
             wait (str, optional): The wait status for the pipeline. Defaults to "SUBMITTED".
+            launch_container (str, optional): The container to launch the pipeline in. Defaults to None.
 
         Raises:
             SeqeraKitError: If the pipeline fails to launch.
@@ -157,6 +160,9 @@ class LaunchConfig(pydantic.BaseModel):
             ) as temp_prerun_file:
                 temp_prerun_file.write(self.pipeline.pre_run)
                 args_dict.update({"pre-run": temp_prerun_file.name})
+
+        if launch_container is not None:
+            args_dict.update({"launch-container": launch_container})
 
         default_response = {
             "workflowId": None,
@@ -251,6 +257,12 @@ def parse_args() -> argparse.Namespace:
         "--config",
         type=str,
         help="Config file to use for the pipeline.",
+        required=False,
+    )
+    parser.add_argument(
+        "--launch-container",
+        type=str,
+        help="Container to use for the pipeline.",
         required=False,
     )
     parser.add_argument(
@@ -388,6 +400,7 @@ def filter_launch_configs(
 def launch_pipelines(
     seqera: seqeraplatform.SeqeraPlatform,
     launch_configs: list[LaunchConfig],
+    launch_container: str | None = None,
 ) -> list[dict[str, str | bool | None]]:
     """
     Launch a list of pipelines.
@@ -401,7 +414,8 @@ def launch_pipelines(
     """
     logging.info("Launching pipelines.")
     launched_pipelines = [
-        launch_config.launch_pipeline(seqera=seqera) for launch_config in launch_configs
+        launch_config.launch_pipeline(seqera=seqera, launch_container=launch_container)
+        for launch_config in launch_configs
     ]
     logging.info("Pipelines launched.")
     return launched_pipelines
@@ -415,7 +429,9 @@ def main() -> None:
 
     complete_launch_configs = read_yaml(args.inputs, args.pre_run, args.config)
 
-    launched_pipelines = launch_pipelines(seqera, complete_launch_configs)
+    launched_pipelines = launch_pipelines(
+        seqera, complete_launch_configs, args.launch_container
+    )
 
     logging.info(f"Writing launches to JSON file {args.output}")
     with open(args.output, "w") as output_file:
