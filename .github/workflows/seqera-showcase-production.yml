@@ -63,7 +63,7 @@ on:
 
   schedule:
     # Every 2am
-    - cron: "0 2 * * *"
+    - cron: "30 11 * * *"
 
 env:
   TOWER_API_ENDPOINT: "https://api.cloud.seqera.io"
@@ -82,6 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      PRE_RUN: ${{ github.event_name != 'workflow_dispatch' && 'true' || inputs.pre_run }}
     steps:
       - uses: actions/checkout@v4
 
@@ -116,10 +117,10 @@ jobs:
             compute-envs/production*.yaml \
             include/*.yaml \
             exclude/* \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.pre_run ) && format('--pre_run "{0}"', inputs.pre_run) || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.config ) && format('--config "{0}"', inputs.config) || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.launch_container ) && format('--launch-container "{0}"', inputs.launch_container) || '' }} \
-            ${{ ( github.event_name == 'workflow_dispatch' && inputs.dryrun ) && '--dryrun' || '' }} \
+            ${{ (github.event_name != 'workflow_dispatch' && inputs.pre_run != '') && '' || format('--pre_run {0}', inputs.pre_run) }} \
+            ${{ (github.event_name != 'workflow_dispatch' && inputs.config != '') && '' || format('--config {0}', inputs.timer) }} \
+            ${{ (github.event_name != 'workflow_dispatch' && inputs.launch_container) && '' || format('--launch-container {0}', inputs.config) }} \
+            ${{ (github.event_name == 'workflow_dispatch' && inputs.dryrun == 'true') && '--dryrun' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v3
@@ -171,9 +172,9 @@ jobs:
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
             --slack_channel ${{ secrets.SLACK_CHANNEL }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack ) && '--slack' || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove ) && '--delete' || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.force ) && '--force' || '' }}
+            ${{ github.event_name == 'workflow_dispatch' && inputs.slack || '' }} \
+            ${{ ( github.event_name == 'workflow_dispatch' && inputs.remove == 'true' ) && '--delete' || '' }} \
+            ${{ ( github.event_name == 'workflow_dispatch' && inputs.force == 'true' ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v3
         with:
