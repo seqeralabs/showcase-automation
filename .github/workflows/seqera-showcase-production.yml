@@ -63,7 +63,7 @@ on:
 
   schedule:
     # Every 2am
-    - cron: "0 12 * * *"
+    - cron: "0 2 * * *"
 
 env:
   TOWER_API_ENDPOINT: "https://api.cloud.seqera.io"
