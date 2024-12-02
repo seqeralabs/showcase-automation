@@ -60,6 +60,11 @@ on:
         default: ""
         type: string
         required: false
+      labels:
+        description: Labels to add to the pipeline
+        default: ""
+        type: string
+        required: false
 
   # schedule:
   #   # Every 2am
@@ -117,6 +122,7 @@ jobs:
             ${{ (github.event_name == 'workflow_dispatch' && inputs.pre_run != '') && format('--pre_run "{0}"', inputs.pre_run) || ''}} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.config != '') && format('--config "{0}"', inputs.config) || '' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.launch_container) && format('--launch-container "{0}"', inputs.launch_container) || '' }} \
+            ${{ (github.event_name == 'workflow_dispatch' && inputs.labels != '') && format('--labels "{0}"', inputs.labels) || '' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.dryrun == 'true') && '--dryrun' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
