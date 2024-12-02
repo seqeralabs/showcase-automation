@@ -127,6 +127,7 @@ jobs:
             ${{ (github.event_name == 'workflow_dispatch' && inputs.launch_container) && format('--launch-container "{0}"', inputs.launch_container) || '' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.labels != '') && format('--labels "{0}"', inputs.labels) || '--labels "automation"' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.dryrun == 'true') && '--dryrun' || '' }} \
+            ${{ (github.event_name == 'workflow_dispatch' && inputs.disable_optimization == 'true') && '--disable-optimization' || '' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v3
