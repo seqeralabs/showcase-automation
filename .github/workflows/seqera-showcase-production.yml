@@ -56,7 +56,7 @@ on:
         type: string
         required: false
       launch_container:
-        description: The container to be used to run Nextflow head job
+        description: Nextflow launch container
         default: ""
         type: string
         required: false
