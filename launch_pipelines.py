@@ -78,6 +78,7 @@ class LaunchConfig(pydantic.BaseModel):
         seqera: seqeraplatform.SeqeraPlatform,
         wait: str = "SUBMITTED",
         launch_container=None,
+        labels: str | None = None,
     ) -> dict[str, str | bool | None]:
         """
         Launch a pipeline.
@@ -160,6 +161,9 @@ class LaunchConfig(pydantic.BaseModel):
             ) as temp_prerun_file:
                 temp_prerun_file.write(self.pipeline.pre_run)
                 args_dict.update({"pre-run": temp_prerun_file.name})
+
+        if labels is not None:
+            args_dict.update({"labels": labels})
 
         if launch_container is not None:
             args_dict.update({"launch-container": launch_container})
@@ -246,6 +250,12 @@ def parse_args() -> argparse.Namespace:
         required=True,
         type=Path,
         help="The input yaml files to read. Must contain keys 'include', 'exclude', 'compute-envs' and 'pipelines'.",
+    )
+    parser.add_argument(
+        "--labels",
+        type=str,
+        help="Labels to add to the pipeline.",
+        required=False,
     )
     parser.add_argument(
         "--pre_run",
@@ -339,9 +349,7 @@ def read_yaml(
 
 
 def create_launch_config(
-    pipelines: list[Pipeline],
-    compute_envs: list[ComputeEnvironment],
-    include: list[LaunchConfig] = [],
+    pipelines: list[Pipeline], compute_envs: list[ComputeEnvironment]
 ) -> list[LaunchConfig]:
     """
     Create a list of launch configs from a list of pipelines and compute environments.
@@ -349,7 +357,6 @@ def create_launch_config(
     Args:
         pipelines (list[Pipeline]): A list of pipelines.
         compute_envs (list[ComputeEnvironment]): A list of compute environments.
-        include (list[LaunchConfig], optional): A list of launch configs to include in addition to pipelines * compute envs. Defaults to [].
 
     Returns:
         list[LaunchConfig]: A list of launch configs.
@@ -362,8 +369,6 @@ def create_launch_config(
                 pipeline=pipeline, compute_environment=compute_env
             )
             launch_configs.append(launch_config)
-    for launch_config in include:
-        launch_configs.append(launch_config)
     return launch_configs
 
 
@@ -401,6 +406,7 @@ def launch_pipelines(
     seqera: seqeraplatform.SeqeraPlatform,
     launch_configs: list[LaunchConfig],
     launch_container: str | None = None,
+    labels: str | None = None,
 ) -> list[dict[str, str | bool | None]]:
     """
     Launch a list of pipelines.
@@ -414,7 +420,9 @@ def launch_pipelines(
     """
     logging.info("Launching pipelines.")
     launched_pipelines = [
-        launch_config.launch_pipeline(seqera=seqera, launch_container=launch_container)
+        launch_config.launch_pipeline(
+            seqera=seqera, launch_container=launch_container, labels=labels
+        )
         for launch_config in launch_configs
     ]
     logging.info("Pipelines launched.")
@@ -430,7 +438,7 @@ def main() -> None:
     complete_launch_configs = read_yaml(args.inputs, args.pre_run, args.config)
 
     launched_pipelines = launch_pipelines(
-        seqera, complete_launch_configs, args.launch_container
+        seqera, complete_launch_configs, args.launch_container, args.labels
     )
 
     logging.info(f"Writing launches to JSON file {args.output}")
