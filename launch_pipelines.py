@@ -79,6 +79,7 @@ class LaunchConfig(pydantic.BaseModel):
         wait: str = "SUBMITTED",
         launch_container=None,
         labels: str | None = None,
+        disable_optimization: bool = False,
     ) -> dict[str, str | bool | None]:
         """
         Launch a pipeline.
@@ -123,7 +124,8 @@ class LaunchConfig(pydantic.BaseModel):
             f"Launching pipeline {self.pipeline.name} on {self.compute_environment.ref}."
         )
 
-        args_dict = {
+        # This should be an object but it's what seqerakit expects.
+        args_dict: dict[str, str | bool | dict[str, str] | None] = {
             "workspace": self.compute_environment.workspace,
             "compute-env": self.compute_environment.name,
             "work-dir": workdir,
@@ -167,6 +169,9 @@ class LaunchConfig(pydantic.BaseModel):
 
         if launch_container is not None:
             args_dict.update({"launch-container": launch_container})
+
+        if disable_optimization:
+            args_dict.update({"disable-optimization": True})
 
         default_response = {
             "workflowId": None,
@@ -280,6 +285,11 @@ def parse_args() -> argparse.Namespace:
         "--dryrun",
         action="store_true",
         help="Dry run the pipeline launch without actually launching.",
+    )
+    parser.add_argument(
+        "--disable-optimization",
+        action="store_true",
+        help="Disable optimization of pipeline launches.",
     )
     return parser.parse_args()
 
@@ -407,6 +417,7 @@ def launch_pipelines(
     launch_configs: list[LaunchConfig],
     launch_container: str | None = None,
     labels: str | None = None,
+    disable_optimization: bool = False,
 ) -> list[dict[str, str | bool | None]]:
     """
     Launch a list of pipelines.
@@ -414,6 +425,9 @@ def launch_pipelines(
     Args:
         seqera (seqeraplatform.SeqeraPlatform): A SeqeraPlatform object.
         launch_configs (list[LaunchConfig]): A list of launch configs.
+        launch_container (str, optional): The container to launch the pipeline in. Defaults to None.
+        labels (str, optional): Labels to add to the pipeline. Defaults to None.
+        disable_optimization (bool, optional): Disable optimizations. Defaults to False.
 
     Returns:
         list[dict[str, str]]: A list of launched pipelines.
@@ -421,7 +435,10 @@ def launch_pipelines(
     logging.info("Launching pipelines.")
     launched_pipelines = [
         launch_config.launch_pipeline(
-            seqera=seqera, launch_container=launch_container, labels=labels
+            seqera=seqera,
+            launch_container=launch_container,
+            labels=labels,
+            disable_optimization=disable_optimization,
         )
         for launch_config in launch_configs
     ]
@@ -438,7 +455,11 @@ def main() -> None:
     complete_launch_configs = read_yaml(args.inputs, args.pre_run, args.config)
 
     launched_pipelines = launch_pipelines(
-        seqera, complete_launch_configs, args.launch_container, args.labels
+        seqera,
+        complete_launch_configs,
+        args.launch_container,
+        args.labels,
+        args.disable_optimization,
     )
 
     logging.info(f"Writing launches to JSON file {args.output}")
