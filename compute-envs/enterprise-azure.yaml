@@ -1,5 +1,5 @@
 compute-envs:
   - ref: azure
-    name: seqera_azure_virginia_fusion
+    name: seqera_azure_virginia_fusion_2
     workdir: az://seqeralabs-showcase
     workspace: "80631102134985"
