@@ -26,7 +26,7 @@ jobs:
             pipeline: heartbeat-nf-core-rnaseq-azure-test-full
           - name: gcp
             workspace_id: 124007984423021
-            compute_env: seqera_aws_london_fusion_nvme_gpus_mixed
+            compute_env: seqera_gcp_finland_fusion
             workdir: s3://scidev-eu-west-2/
             pipeline: heartbeat-nf-core-rnaseq-google-test-full
 
