@@ -25,7 +25,7 @@ jobs:
             pipeline: heartbeat-nf-core-rnaseq-google-test-full
 
     steps:
-      - uses: seqeralabs/action-tower-launch@034c8f3bfa546bcc7b803540faa5e74af25e36a8
+      - uses: seqeralabs/action-tower-launch@d5dc89d1eb89e71286667112adaae0330aa28c7c
         with:
           access_token: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
           run_name: heartbeat-${{ matrix.launch.name }}_${{ github.run_id }}
