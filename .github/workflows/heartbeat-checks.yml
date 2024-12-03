@@ -25,14 +25,12 @@ jobs:
             pipeline: heartbeat-nf-core-rnaseq-google-test-full
 
     steps:
-      - uses: seqeralabs/action-tower-launch@4993decdbf9ce0872c479a642a583f525f81fc8e
+      - uses: seqeralabs/action-tower-launch@034c8f3bfa546bcc7b803540faa5e74af25e36a8
         with:
           access_token: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
           run_name: nightly_run_${{ matrix.launch.name }}_${{ github.run_id }}
           workspace_id: ${{ matrix.launch.workspace_id }}
-          compute_env: ${{ matrix.launch.compute_env }}
           pipeline: ${{ matrix.launch.pipeline }}
-          workdir: ${{ matrix.launch.workdir }}
           api_endpoint: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
 
       - uses: actions/upload-artifact@v3
