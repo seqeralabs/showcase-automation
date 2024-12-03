@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: seqeralabs/action-tower-launch@v2
         with:
-          access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
+          access_token: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
           run_name: nightly_run_${{ matrix.launch.name }}_${{ github.run_id }}
           workspace_id: ${{ matrix.launch.workspace_id }}
           compute_env: ${{ matrix.launch.compute_env }}
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
-          name: tower_logs_run_${{ matrix.name }}_${{ github.run_id }}
+          name: tower_logs_run_${{ matrix.launch.name }}_${{ github.run_id }}
           path: |
             tower_action_*.log
             tower_action_*.json
