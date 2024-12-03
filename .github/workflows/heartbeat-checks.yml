@@ -28,7 +28,7 @@ jobs:
       - uses: seqeralabs/action-tower-launch@d5dc89d1eb89e71286667112adaae0330aa28c7c
         with:
           access_token: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
-          run_name: heartbeat-${{ matrix.launch.name }}_${{ github.run_id }}
+          run_name: heartbeat-${{ matrix.launch.name }}-${{ github.run_id }}
           workspace_id: ${{ matrix.launch.workspace_id }}
           pipeline: ${{ matrix.launch.pipeline }}
           api_endpoint: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
