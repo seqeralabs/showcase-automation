@@ -16,22 +16,16 @@ jobs:
         launch:
           - name: aws
             workspace_id: 64430228002560
-            compute_env: seqera_aws_london_fusion_nvme_labels_copy
-            workdir: s3://scidev-eu-west-2/
             pipeline: heartbeat-nf-core-rnaseq-aws-test-full
           - name: azure
             workspace_id: 280116106690509
-            compute_env: seqera_azure_virginia_fusion
-            workdir: az://seqeralabs-showcase
             pipeline: heartbeat-nf-core-rnaseq-azure-test-full
           - name: gcp
             workspace_id: 124007984423021
-            compute_env: seqera_gcp_finland_fusion
-            workdir: gs://seqeralabs-showcase-eu-north-1
             pipeline: heartbeat-nf-core-rnaseq-google-test-full
 
     steps:
-      - uses: seqeralabs/action-tower-launch@v2
+      - uses: seqeralabs/action-tower-launch@4993decdbf9ce0872c479a642a583f525f81fc8e
         with:
           access_token: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
           run_name: nightly_run_${{ matrix.launch.name }}_${{ github.run_id }}
