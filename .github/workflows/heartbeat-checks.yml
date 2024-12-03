@@ -1,0 +1,49 @@
+name: Nightly Tower Launches
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *" # Runs at 2 AM UTC every day
+
+env:
+  TOWER_API_ENDPOINT: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
+
+jobs:
+  launch-tower-workflows:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        launch:
+          - name: aws
+            workspace_id: 64430228002560
+            compute_env: seqera_aws_london_fusion_nvme_labels_copy
+            workdir: s3://scidev-eu-west-2/
+            pipeline: heartbeat-nf-core-rnaseq-test-full
+          - name: azure
+            workspace_id: 280116106690509
+            compute_env: seqera_azure_virginia_fusion
+            workdir: az://seqeralabs-showcase
+            pipeline: heartbeat-nf-core-rnaseq-test-full
+          - name: gcp
+            workspace_id: 124007984423021
+            compute_env: seqera_aws_london_fusion_nvme_gpus_mixed
+            workdir: s3://scidev-eu-west-2/
+            pipeline: heartbeat-nf-core-rnaseq-azure-test-full
+
+    steps:
+      - uses: seqeralabs/action-tower-launch@v2
+        with:
+          access_token: ${{ secrets.TOWER_ACCESS_TOKEN }}
+          run_name: nightly_run_${{ matrix.launch.name }}_${{ github.run_id }}
+          workspace_id: ${{ matrix.launch.workspace_id }}
+          compute_env: ${{ matrix.launch.compute_env }}
+          pipeline: ${{ matrix.launch.pipeline }}
+          workdir: ${{ matrix.launch.workdir }}
+
+      - uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: tower_logs_run_${{ matrix.name }}_${{ github.run_id }}
+          path: |
+            tower_action_*.log
+            tower_action_*.json
