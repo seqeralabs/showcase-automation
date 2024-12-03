@@ -1,4 +1,4 @@
-name: Nightly Tower Launches
+name: heartbeat-checks
 
 on:
   workflow_dispatch:
@@ -39,6 +39,7 @@ jobs:
           compute_env: ${{ matrix.launch.compute_env }}
           pipeline: ${{ matrix.launch.pipeline }}
           workdir: ${{ matrix.launch.workdir }}
+          api_endpoint: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
 
       - uses: actions/upload-artifact@v3
         if: success() || failure()
