@@ -71,10 +71,6 @@ on:
         type: boolean
         required: false
 
-  schedule:
-    # Every 2am
-    - cron: "0 2 * * *"
-
 env:
   TOWER_API_ENDPOINT: ${{ secrets.STAGING_ENTERPRISE_TOWER_ACCESS_ENDPOINT }}
 
