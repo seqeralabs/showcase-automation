@@ -65,6 +65,14 @@ def parse_args() -> argparse.Namespace:
         help="Filter studios by status (stopped, started, running, errored)",
         required=False,
     )
+    parser.add_argument(
+        "-c",
+        "--slack_channel",
+        type=str,
+        help="Slack channel to send the message to",
+        required=False,
+        default=os.environ.get("SLACK_CHANNEL"),
+    )
     return parser.parse_args()
 
 
@@ -96,7 +104,7 @@ def seqera_api_get(
     return studio_list
 
 
-def print_studios_table(studios_list: StudioList) -> None:
+def studios_table(studios_list: StudioList) -> str:
     """Print studios data as a formatted table"""
 
     # Extract relevant fields for each studio
@@ -107,7 +115,24 @@ def print_studios_table(studios_list: StudioList) -> None:
     ]
 
     # Print as table
-    print(tabulate(table_data, headers="keys", tablefmt="plain", missingval="-"))
+    return tabulate(table_data, headers="keys", tablefmt="plain", missingval="-")
+
+
+def send_slack_message(table: str, slack_channel: str) -> None:
+    """Send a Slack message with the studios table"""
+    from slack_sdk import WebClient
+
+    webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
+    _auth_test = webclient.auth_test()
+    if not _auth_test.data.get("ok", False):
+        raise Exception("Invalid Slack token")
+
+    response = webclient.chat_postMessage(
+        channel=slack_channel, text="```" + table + "```"
+    )
+
+    if not response.data.get("ok", False):
+        raise Exception("Error sending Slack message")
 
 
 # Main function to orchestrate the process
@@ -118,7 +143,8 @@ def main():
     studios = seqera_api_get(args.base_url, args.workspace_id, "studios")
 
     # Print the response data
-    print_studios_table(studios)
+    table = studios_table(studios)
+    send_slack_message(table, args.slack_channel)
 
 
 if __name__ == "__main__":
