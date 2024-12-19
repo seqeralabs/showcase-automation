@@ -1,23 +1,29 @@
-name: data-studios-heartbeat
+name: data-studios-heartbeat-production
 
 on:
   workflow_dispatch:
     inputs:
       workspace_id:
         type: string
-        default: "138659136604200"
+        description: Space separated list of workspace IDs
+        default: "138659136604200 40230138858677"
+      slack:
+        description: Whether to send a Slack message
+        type: boolean
+        required: false
+        default: true
   schedule:
     - cron: "0 2 * * *" # Runs at 2 AM UTC every day
 
 env:
-  TOWER_API_ENDPOINT: ${{ secrets.TOWER_ACCESS_ENDPOINT }}
+  TOWER_API_ENDPOINT: "https://api.cloud.seqera.io"
 
 jobs:
   check-data-studios:
     runs-on: ubuntu-latest
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
-      PRE_RUN: ${{ github.event_name != 'workflow_dispatch' && 'true' || inputs.pre_run }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,5 +51,7 @@ jobs:
 
       - name: launch_pipelines
         run: |
-          echo python studios_api_test.py \
-            -w ${{ github.event_name == 'workflow_dispatch' && inputs.workspace_id || '138659136604200' }}
+          python studios_api_test.py \
+            -w ${{ github.event_name == 'workflow_dispatch' && inputs.workspace_id || '138659136604200 40230138858677' }} \
+            --slack_channel ${{ secrets.SLACK_CHANNEL }} \
+            ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.slack) && '--slack' || '' }}
