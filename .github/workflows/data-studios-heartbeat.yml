@@ -5,9 +5,10 @@ on:
     inputs:
       workspace_id:
         type: string
+        description: Space separated list of workspace IDs
         default: "138659136604200 40230138858677"
       slack:
-        description: Slack hook
+        description: Whether to send a Slack message
         type: boolean
         required: false
         default: true
