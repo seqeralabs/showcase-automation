@@ -73,6 +73,12 @@ def parse_args() -> argparse.Namespace:
         required=False,
         default=os.environ.get("SLACK_CHANNEL"),
     )
+    parser.add_argument(
+        "--slack",
+        action="store_true",
+        help="Send a Slack message with the studios table",
+        required=False,
+    )
     return parser.parse_args()
 
 
@@ -144,7 +150,8 @@ def main():
 
     # Print the response data
     table = studios_table(studios)
-    send_slack_message(table, args.slack_channel)
+    if args.slack:
+        send_slack_message(table, args.slack_channel)
 
 
 if __name__ == "__main__":
