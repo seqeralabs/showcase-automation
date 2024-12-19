@@ -1,0 +1,49 @@
+name: heartbeat-checks
+
+on:
+  workflow_dispatch:
+    inputs:
+      workspace_id:
+        type: string
+        default: "138659136604200"
+  schedule:
+    - cron: "0 2 * * *" # Runs at 2 AM UTC every day
+
+env:
+  TOWER_API_ENDPOINT: ${{ secrets.TOWER_ACCESS_ENDPOINT }}
+
+jobs:
+  check-data-studios:
+    runs-on: ubuntu-latest
+    env:
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      PRE_RUN: ${{ github.event_name != 'workflow_dispatch' && 'true' || inputs.pre_run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: install tw cli
+        run: |
+          set -euo pipefail
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.10.1/tw-linux-x86_64
+          mv tw-* tw
+          chmod +x tw
+          sudo mv tw /usr/local/bin/
+
+      - name: tower check
+        run: |
+          tw --version
+
+      - name: launch_pipelines
+        run: |
+          echo python studios_api_test.py \
+            -w ${{ github.event_name == 'workflow_dispatch' && inputs.workspace_id || '138659136604200' }}
