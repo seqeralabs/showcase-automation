@@ -1,4 +1,4 @@
-name: heartbeat-checks
+name: data-studios-heartbeat
 
 on:
   workflow_dispatch:
