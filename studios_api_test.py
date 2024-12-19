@@ -18,6 +18,7 @@ class Studio(pydantic.BaseModel):
 
     sessionId: str
     workspaceId: int
+    workspaceName: str | None = None
     parentCheckpoint: str | None = None
     user: dict
     name: str
@@ -25,6 +26,10 @@ class Studio(pydantic.BaseModel):
     description: str | None = None
     studioUrl: str
     computeEnv: dict
+
+    def model_post_init(self, __context) -> None:
+        # Get the workspace name from the workspace ID
+        self.workspaceName = get_workspace_name(self.workspaceId)
 
 
 class StudioList(pydantic.BaseModel):
@@ -98,23 +103,49 @@ def get_headers() -> dict:
 
 
 # Query the Seqera API
+# DataStudios endpoint = "studios"
+# User-info endpoint = "user-info"
+# List workspaces endpoint = "user/${userId}/workspaces"
 def seqera_api_get(
-    base_url: str, workspace_id: int, endpoint: str, params=None
-) -> StudioList:
+    endpoint: str,
+    params=None,
+    base_url: str | None = None,
+) -> dict:
+    base_url = (
+        base_url or os.getenv("TOWER_API_ENDPOINT") or "https://cloud.seqera.io/api"
+    )
     url = f"{base_url}/{endpoint}"
 
     if params is None:
         params = {}
-    params.setdefault("workspaceId", workspace_id)  # Ensure workspaceId is included
 
     headers = get_headers()
     response = requests.get(url, headers=headers, params=params)
 
     response.raise_for_status()  # Raise an exception for HTTP error codes
-    studio_list = StudioList.model_validate(
-        response.json()
-    )  # Turn response into object
-    return studio_list
+    return response.json()
+
+
+def get_workspace_name(workspace_id: int) -> str:
+    user_info = seqera_api_get(endpoint="user-info")
+    user_id = user_info["user"]["id"]
+    workspace_details = seqera_api_get(endpoint=f"user/{user_id}/workspaces")
+    workspace = [
+        f"{w['orgName']}/{w['workspaceName']}"
+        for w in workspace_details["orgsAndWorkspaces"]
+        if w["workspaceId"] == int(workspace_id)
+    ]
+    return workspace[0]
+
+
+def get_studios(base_url: str, workspace_ids: list[int]) -> StudioList:
+    studios = StudioList(studios=[], totalSize=0)
+    for workspace_id in workspace_ids:
+        studios_responses = seqera_api_get(
+            endpoint="studios", params={"workspaceId": workspace_id}
+        )
+        studios += StudioList.model_validate(studios_responses)
+    return studios
 
 
 def studios_table(studios_list: StudioList) -> str:
@@ -123,7 +154,7 @@ def studios_table(studios_list: StudioList) -> str:
     # Extract relevant fields for each studio
     # Merge studio and statusInfo into a single dictionary
     table_data = [
-        studio.model_dump(include={"name", "sessionId"})
+        studio.model_dump(include={"workspaceName", "name"})
         | studio.statusInfo.model_dump()
         for studio in studios_list.studios
     ]
@@ -153,10 +184,7 @@ def send_slack_message(table: str, slack_channel: str) -> None:
 def main():
     args = parse_args()
 
-    # Query the Seqera API for studios
-    studios = StudioList(studios=[], totalSize=0)
-    for workspace_id in args.workspace_id:
-        studios += seqera_api_get(args.base_url, workspace_id, "studios")
+    studios = get_studios(args.base_url, args.workspace_id)
 
     # Print the response data
     table = studios_table(studios)

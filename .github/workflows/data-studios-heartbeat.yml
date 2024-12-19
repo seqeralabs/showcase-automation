@@ -5,7 +5,7 @@ on:
     inputs:
       workspace_id:
         type: string
-        default: "138659136604200"
+        default: "138659136604200 40230138858677"
       slack:
         description: Slack hook
         type: boolean
