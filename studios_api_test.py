@@ -33,6 +33,12 @@ class StudioList(pydantic.BaseModel):
     studios: list[Studio]
     totalSize: int
 
+    def __add__(self, other: "StudioList") -> "StudioList":
+        return StudioList(
+            studios=self.studios + other.studios,
+            totalSize=self.totalSize + other.totalSize,
+        )
+
 
 # Parse command-line arguments
 def parse_args() -> argparse.Namespace:
@@ -53,6 +59,7 @@ def parse_args() -> argparse.Namespace:
         "-w",
         "--workspace_id",
         type=str,
+        nargs="+",
         help="Workspace ID that contains resources",
         required=True,
     )
@@ -147,7 +154,9 @@ def main():
     args = parse_args()
 
     # Query the Seqera API for studios
-    studios = seqera_api_get(args.base_url, args.workspace_id, "studios")
+    studios = StudioList(studios=[], totalSize=0)
+    for workspace_id in args.workspace_id:
+        studios += seqera_api_get(args.base_url, workspace_id, "studios")
 
     # Print the response data
     table = studios_table(studios)
