@@ -116,7 +116,8 @@ def studios_table(studios_list: StudioList) -> str:
     # Extract relevant fields for each studio
     # Merge studio and statusInfo into a single dictionary
     table_data = [
-        studio.dict(include={"name", "sessionId"}) | studio.statusInfo.dict()
+        studio.model_dump(include={"name", "sessionId"})
+        | studio.statusInfo.model_dump()
         for studio in studios_list.studios
     ]
 
@@ -150,6 +151,7 @@ def main():
 
     # Print the response data
     table = studios_table(studios)
+    print(table)
     if args.slack:
         send_slack_message(table, args.slack_channel)
 
