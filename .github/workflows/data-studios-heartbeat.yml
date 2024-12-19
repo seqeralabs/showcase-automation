@@ -6,6 +6,11 @@ on:
       workspace_id:
         type: string
         default: "138659136604200"
+      slack:
+        description: Slack hook
+        type: boolean
+        required: false
+        default: true
   schedule:
     - cron: "0 2 * * *" # Runs at 2 AM UTC every day
 
