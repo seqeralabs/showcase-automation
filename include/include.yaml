@@ -9,7 +9,7 @@ include:
     compute_environment:
       ref: aws
       name: seqera_aws_ireland_fusionv2_nvme
-      workdir: s3://seqera-showcase
+      workdir: s3://seqera-showcase/scratch/cicd
       workspace: "138659136604200"
   - pipeline:
       name: rnaseq
