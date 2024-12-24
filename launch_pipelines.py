@@ -107,6 +107,8 @@ class LaunchConfig(pydantic.BaseModel):
         outdir = "/".join(
             [
                 self.compute_environment.workdir,
+                "results",
+                "cicd",
                 self.pipeline.name,
                 "results-test-" + date,
             ]
