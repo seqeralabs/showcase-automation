@@ -65,7 +65,7 @@ Example:
 compute-envs:
   - ref: aws
     name: seqera_aws_ireland_fusionv2_nvme
-    workdir: s3://seqeralabs-showcase
+    workdir: s3://seqera-showcase
     workspace: '138659136604200'
 ```
 
@@ -86,7 +86,7 @@ include:
     compute_environment:
       ref: aws
       name: seqera_aws_ireland_fusionv2_nvme
-      workdir: s3://seqeralabs-showcase
+      workdir: s3://seqera-showcase
       workspace: '138659136604200'
 ```
 

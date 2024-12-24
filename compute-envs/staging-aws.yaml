@@ -2,5 +2,5 @@
 compute-envs:
   - ref: aws
     name: seqera_aws_ireland_fusion_nvme
-    workdir: s3://seqeralabs-showcase
+    workdir: s3://seqera-showcase/scratch/cicd
     workspace: "14715071736572"
