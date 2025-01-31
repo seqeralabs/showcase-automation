@@ -33,7 +33,7 @@ jobs:
           pipeline: ${{ matrix.launch.pipeline }}
           api_endpoint: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: tower_logs_run_${{ matrix.launch.name }}_${{ github.run_id }}

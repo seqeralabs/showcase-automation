@@ -132,7 +132,7 @@ jobs:
             ${{ (github.event_name == 'workflow_dispatch' && inputs.disable_optimization == 'false') && '' || '--disable-optimization' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
           path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
@@ -147,7 +147,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
           path: run_details
@@ -185,7 +185,7 @@ jobs:
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove == 'true' ) && '--delete' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.force == 'true' ) && '--force' || '' }}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data
           path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json
