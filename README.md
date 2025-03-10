@@ -29,6 +29,16 @@ This script performs the following steps:
 - If `--delete` is enabled, it removes the pipeline if it has successfully completed.
 - If `--force` is enabled, it removes the pipeline even if it has not finished or failed.
 
+### `studios_api_test.py`
+
+This script performs the following steps:
+
+This script performs the following steps:
+
+- Queries the Seqera Platform API to retrieve information about Data Studios in selected workspaces (`--workspaces`)
+- Can filter by workspace IDs and status
+- Supports sending results to Slack
+
 ### Input YAML Files
 
 #### `pipelines`
