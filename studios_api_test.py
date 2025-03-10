@@ -19,7 +19,6 @@ class Studio(pydantic.BaseModel):
     sessionId: str
     workspaceId: int
     workspaceName: str | None = None
-    parentCheckpoint: str | None = None
     user: dict
     name: str
     statusInfo: StudioStatus
