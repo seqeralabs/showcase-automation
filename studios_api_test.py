@@ -6,7 +6,7 @@ from tabulate import tabulate
 
 
 class StudioStatus(pydantic.BaseModel):
-    """Status of the Data Studio"""
+    """Status of the Studio"""
 
     status: str | None
     message: str | None
@@ -14,7 +14,7 @@ class StudioStatus(pydantic.BaseModel):
 
 
 class Studio(pydantic.BaseModel):
-    """Data Studio class."""
+    """Studio class."""
 
     sessionId: str
     workspaceId: int
@@ -32,7 +32,7 @@ class Studio(pydantic.BaseModel):
 
 
 class StudioList(pydantic.BaseModel):
-    """A list of Data Studios."""
+    """A list of Studios."""
 
     studios: list[Studio]
     totalSize: int
@@ -102,7 +102,7 @@ def get_headers() -> dict:
 
 
 # Query the Seqera API
-# DataStudios endpoint = "studios"
+# Studios endpoint = "studios"
 # User-info endpoint = "user-info"
 # List workspaces endpoint = "user/${userId}/workspaces"
 def seqera_api_get(
