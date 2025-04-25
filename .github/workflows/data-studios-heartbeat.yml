@@ -1,4 +1,4 @@
-name: data-studios-heartbeat-production
+name: studios-heartbeat-production
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ env:
   TOWER_API_ENDPOINT: "https://api.cloud.seqera.io"
 
 jobs:
-  check-data-studios:
+  check-studios:
     runs-on: ubuntu-latest
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
         run: |
           tw --version
 
-      - name: launch_pipelines
+      - name: check_studios
         run: |
           python studios_api_test.py \
             -w ${{ github.event_name == 'workflow_dispatch' && inputs.workspace_id || '138659136604200 40230138858677' }} \

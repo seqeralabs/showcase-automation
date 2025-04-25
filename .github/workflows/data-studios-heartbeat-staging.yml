@@ -1,4 +1,4 @@
-name: data-studios-heartbeat-staging
+name: studios-heartbeat-staging
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ env:
   TOWER_API_ENDPOINT: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
 
 jobs:
-  check-data-studios:
+  check-studios:
     runs-on: ubuntu-latest
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN  }}
@@ -49,7 +49,7 @@ jobs:
         run: |
           tw --version
 
-      - name: launch_pipelines
+      - name: check_studios
         run: |
           python studios_api_test.py \
             -w ${{ github.event_name == 'workflow_dispatch' && inputs.workspace_id || '215808445993459' }} \
