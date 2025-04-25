@@ -53,5 +53,5 @@ jobs:
         run: |
           python studios_api_test.py \
             -w ${{ github.event_name == 'workflow_dispatch' && inputs.workspace_id || '215808445993459' }} \
-            --slack_channel ${{ secrets.SLACK_CHANNEL }} \
+            --slack_channel ${{ secrets.ENGINEERING_SLACK_CHANNEL }} \
             ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.slack)) && '--slack' || '' }}
