@@ -1,4 +1,4 @@
-name: data-studios-heartbeat-staging
+name: studios-heartbeat-staging
 
 on:
   workflow_dispatch:
@@ -19,10 +19,10 @@ env:
   TOWER_API_ENDPOINT: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
 
 jobs:
-  check-data-studios:
+  check-studios:
     runs-on: ubuntu-latest
     env:
-      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      TOWER_ACCESS_TOKEN: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN  }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     steps:
       - uses: actions/checkout@v4
@@ -49,9 +49,9 @@ jobs:
         run: |
           tw --version
 
-      - name: launch_pipelines
+      - name: check_studios
         run: |
           python studios_api_test.py \
             -w ${{ github.event_name == 'workflow_dispatch' && inputs.workspace_id || '215808445993459' }} \
-            --slack_channel ${{ secrets.SLACK_CHANNEL }} \
+            --slack_channel ${{ secrets.ENGINEERING_SLACK_CHANNEL }} \
             ${{ (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.slack)) && '--slack' || '' }}
