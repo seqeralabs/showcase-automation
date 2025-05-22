@@ -89,7 +89,7 @@ env:
 # if configured, and deletes the workflow run if configured.
 jobs:
   launch:
-    runs-on: ubuntu-latest-m
+    runs-on: ubuntu-latest
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       PRE_RUN: ${{ github.event_name != 'workflow_dispatch' && 'true' || inputs.pre_run }}
@@ -141,7 +141,7 @@ jobs:
           path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
   clearup-and-delete:
-    runs-on: ubuntu-latest-m
+    runs-on: ubuntu-latest
     needs: [launch]
     environment: ${{ inputs.timer || 'delay60mins' }}
     env:
