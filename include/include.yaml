@@ -1,4 +1,3 @@
-# NOTE Why are these all different compute_envs? Why not just use one?
 include:
   - pipeline:
       name: sentieon
