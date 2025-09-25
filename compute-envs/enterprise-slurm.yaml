@@ -1,6 +1,6 @@
 compute-envs:
   - ref: slurm
     name: seqera_slurm
-    workdir: /home/tower/work
+    workdir: /home/seqera/work
     workspace: "80631102134985"
     profiles: ["singularity"]
