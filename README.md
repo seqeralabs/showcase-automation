@@ -68,6 +68,10 @@ Each entry in the YAML must specify an existing compute environment in the Seqer
 - `name` (string): The name of the compute environment in the Seqera platform.
 - `workdir` (string): The work directory to use for the compute environment. A subdirectory will be created per pipeline run.
 - `workspace` (string): The ID of the workspace the compute environment belongs to.
+- `profiles` (List of strings, optional): Default profiles to apply to all pipelines on this compute environment. Defaults to empty list.
+- `profile_mappings` (List of profile mappings, optional): Pipeline-specific profile configurations. Each mapping contains:
+  - `pipelines` (List of strings): Pipeline names or glob patterns (e.g., "nf-core-*" matches all nf-core pipelines)
+  - `profiles` (List of strings): Profiles to apply when a pipeline matches the pattern
 
 Example:
 
@@ -77,7 +81,28 @@ compute-envs:
     name: seqera_aws_ireland_fusionv2_nvme
     workdir: s3://seqera-showcase
     workspace: '138659136604200'
+    profiles: []  # Default profiles for all pipelines
 ```
+
+Example with profile mappings (for Slurm with Singularity):
+
+```yaml
+compute-envs:
+  - ref: slurm
+    name: seqera_slurm
+    workdir: /home/seqera/work
+    workspace: '138659136604200'
+    profiles: []  # Default profiles for pipelines without specific mappings
+    profile_mappings:
+      # Apply singularity profile to nf-core pipelines
+      - pipelines: ["nf-core-*", "rnaseq", "sarek"]
+        profiles: ["singularity"]
+      # Hello pipeline runs without singularity
+      - pipelines: ["hello"]
+        profiles: []
+```
+
+**Note on Profile Mappings**: Profile mappings are useful when different pipelines require different profiles on the same compute environment. For example, some pipelines may not include certain profiles in their `nextflow.config`, and Nextflow 24.05+ will fail if you try to use a non-existent profile. Use profile mappings to conditionally apply profiles only to pipelines that support them.
 
 #### `include`
 

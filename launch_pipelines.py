@@ -36,6 +36,13 @@ class Pipeline(pydantic.BaseModel):
     revision: str | None = None
 
 
+class ProfileMapping(pydantic.BaseModel):
+    """A mapping of pipeline names to profiles that should be applied."""
+
+    pipelines: list[str]
+    profiles: list[str]
+
+
 class ComputeEnvironment(pydantic.BaseModel):
     """A compute environment to launch a pipeline on."""
 
@@ -44,6 +51,36 @@ class ComputeEnvironment(pydantic.BaseModel):
     workdir: str
     workspace: str
     profiles: list[str] = []
+    profile_mappings: list[ProfileMapping] = []
+
+    def get_profiles_for_pipeline(self, pipeline_name: str) -> list[str]:
+        """
+        Get the profiles that should be applied to a specific pipeline.
+
+        If profile_mappings are defined, check if the pipeline name matches any mapping.
+        Supports glob-style patterns (e.g., "nf-core-*" matches "nf-core-rnaseq").
+        If no mappings match, returns the default profiles.
+
+        Args:
+            pipeline_name (str): The name of the pipeline.
+
+        Returns:
+            list[str]: The profiles to apply to the pipeline.
+        """
+        import fnmatch
+
+        # If no mappings are defined, use default profiles
+        if not self.profile_mappings:
+            return self.profiles
+
+        # Check each mapping to see if pipeline matches
+        for mapping in self.profile_mappings:
+            for pattern in mapping.pipelines:
+                if fnmatch.fnmatch(pipeline_name, pattern):
+                    return mapping.profiles
+
+        # If no mappings match, use default profiles
+        return self.profiles
 
 
 class LaunchConfig(pydantic.BaseModel):
@@ -138,14 +175,17 @@ class LaunchConfig(pydantic.BaseModel):
         if self.pipeline.revision is not None:
             args_dict.update({"revision": self.pipeline.revision})
 
-        if self.pipeline.profiles != [] or self.compute_environment.profiles != []:
+        # Get the appropriate compute environment profiles for this pipeline
+        compute_env_profiles = self.compute_environment.get_profiles_for_pipeline(
+            self.pipeline.name
+        )
+
+        if self.pipeline.profiles != [] or compute_env_profiles != []:
             # Create profiles string
             args_dict.update(
                 {
                     "profile": str(
-                        ",".join(
-                            self.pipeline.profiles + self.compute_environment.profiles
-                        )
+                        ",".join(self.pipeline.profiles + compute_env_profiles)
                     )
                 }
             )
