@@ -3,4 +3,11 @@ compute-envs:
     name: seqera_slurm
     workdir: /home/seqera/work
     workspace: "138659136604200"
-    profiles: ["singularity"]
+    profiles: []  # Default profiles for pipelines without specific mappings
+    profile_mappings:
+      # Apply singularity profile to nf-core pipelines
+      - pipelines: ["nf-core-*", "rnaseq", "sarek", "viralrecon-*"]
+        profiles: ["singularity"]
+      # Hello pipeline should not use singularity profile
+      - pipelines: ["hello"]
+        profiles: []
