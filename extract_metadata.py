@@ -262,17 +262,25 @@ def delete_run_on_platform(
         "deleted": False,
     }
 
+    # Skip deletion if workflow failed to launch (no workflow ID)
+    if run_info["workflow"]["id"] is None:
+        logging.info(f"Skipping deletion for failed launch: {run_info['workflow-info']['workflowName']}")
+        return default_output
+
     # Check if run finish and delete if true
     if run_info["workflow"]["status"] == "SUCCEEDED" or force:
         try:
             logging.info(f"Deleting run {run_info['workflow']['id']}")
+
+            # Get workspaceId from workflow-metadata (successful launches) or workflow-info (failed launches)
+            workspace_id = run_info.get("workflow-metadata", {}).get("workspaceId") or run_info["workflow-info"].get("workspaceId")
 
             args = [
                 "delete",
                 "-id",
                 run_info["workflow"]["id"],
                 "-w",
-                str(run_info["workflow-metadata"]["workspaceId"]),
+                str(workspace_id),
             ]
 
             if force:
