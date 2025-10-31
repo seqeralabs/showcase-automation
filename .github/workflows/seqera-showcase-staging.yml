@@ -128,8 +128,8 @@ jobs:
             ${{ (github.event_name == 'workflow_dispatch' && inputs.config != '') && format('--config "{0}"', inputs.config) || '' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.launch_container) && format('--launch-container "{0}"', inputs.launch_container) || '' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.labels != '') && format('--labels "{0}"', inputs.labels) || '--labels "automation"' }} \
-            ${{ (github.event_name == 'workflow_dispatch' && inputs.dryrun == 'true') && '--dryrun' || '' }} \
-            ${{ (github.event_name == 'workflow_dispatch' && inputs.disable_optimization == 'false') && '' || '--disable-optimization' }} \
+            ${{ (github.event_name == 'workflow_dispatch' && inputs.dryrun == true) && '--dryrun' || '' }} \
+            ${{ (github.event_name == 'workflow_dispatch' && inputs.disable_optimization == false) && '' || '--disable-optimization' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
       - uses: actions/upload-artifact@v4
@@ -181,9 +181,9 @@ jobs:
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
             --slack_channel ${{ secrets.SLACK_CHANNEL }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack == 'true' ) && '--slack' || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove == 'true' ) && '--delete' || '' }} \
-            ${{ ( github.event_name != 'workflow_dispatch' || inputs.force == 'true' ) && '--force' || '' }}
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack == true ) && '--slack' || '' }} \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove == true ) && '--delete' || '' }} \
+            ${{ ( github.event_name != 'workflow_dispatch' || inputs.force == true ) && '--force' || '' }}
 
       - uses: actions/upload-artifact@v4
         with:

@@ -37,8 +37,11 @@ from argparse import Namespace
 from pathlib import Path
 from seqerakit import seqeraplatform
 from slack_sdk.web import WebClient
-from tabulate import tabulate
 from typing import Any, Dict, List
+
+
+# Slack table block maximum row limit (including header row)
+SLACK_TABLE_MAX_ROWS = 100
 
 
 def parse_args() -> Namespace:
@@ -300,6 +303,179 @@ def delete_run_on_platform(
         return default_output
 
 
+def get_status_emoji(status: str) -> str:
+    """
+    Get an emoji representation for a workflow status.
+
+    Args:
+        status (str): The workflow status.
+
+    Returns:
+        str: An emoji representing the status.
+    """
+    status_map = {
+        "SUCCEEDED": "✅",
+        "FAILED": "❌",
+        "FAILED_TO_LAUNCH": "🚫",
+        "RUNNING": "🚀",
+        "SUBMITTED": "⏳",
+        "CANCELLED": "⏸️",
+        "UNKNOWN": "❓",
+    }
+    return status_map.get(status, "❓")
+
+
+def create_table_cell_raw(text: str) -> Dict[str, str]:
+    """
+    Create a raw text table cell.
+
+    Args:
+        text (str): The text content.
+
+    Returns:
+        dict: A raw_text table cell.
+    """
+    return {"type": "raw_text", "text": str(text) if text else "-"}
+
+
+def create_table_cell_link(text: str, url: str) -> Dict[str, Any]:
+    """
+    Create a rich text table cell with a hyperlink.
+
+    Args:
+        text (str): The link text to display.
+        url (str): The URL to link to.
+
+    Returns:
+        dict: A rich_text table cell with a link.
+    """
+    if not url or url == "-":
+        return create_table_cell_raw(text)
+
+    return {
+        "type": "rich_text",
+        "elements": [
+            {
+                "type": "rich_text_section",
+                "elements": [
+                    {
+                        "type": "link",
+                        "text": text,
+                        "url": url
+                    }
+                ]
+            }
+        ]
+    }
+
+
+def build_workflow_summary(parsed_data: List[Dict[str, Any]]) -> Dict[str, int]:
+    """
+    Build a summary of workflow statuses.
+
+    Args:
+        parsed_data (list): List of parsed workflow data.
+
+    Returns:
+        dict: Summary statistics with status counts.
+    """
+    summary = {"total": len(parsed_data), "succeeded": 0, "failed": 0, "other": 0}
+
+    for workflow in parsed_data:
+        status = workflow.get("status", "UNKNOWN")
+        if status == "SUCCEEDED":
+            summary["succeeded"] += 1
+        elif status in ("FAILED", "FAILED_TO_LAUNCH"):
+            summary["failed"] += 1
+        else:
+            summary["other"] += 1
+
+    return summary
+
+
+def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Build a Slack table block to display workflows in their original order.
+
+    Args:
+        parsed_data (list): List of parsed workflow data (max 100 rows).
+
+    Returns:
+        dict: A Slack table block.
+    """
+    # Build table rows
+    rows = []
+
+    # Header row - match original column order: pipeline, workspace, computeEnv, status, workflowUrl
+    rows.append([
+        create_table_cell_raw("Pipeline"),
+        create_table_cell_raw("Workspace"),
+        create_table_cell_raw("Compute Environment"),
+        create_table_cell_raw("Status"),
+        create_table_cell_raw("Link"),
+    ])
+
+    # Data rows - preserve original order
+    for workflow in parsed_data:
+        status = workflow.get("status", "UNKNOWN")
+        emoji = get_status_emoji(status)
+        status_text = f"{emoji} {status}"
+        pipeline = workflow.get("pipeline", "Unknown")
+        workspace = workflow.get("workspace", "-")
+        compute = workflow.get("computeEnv", "-")
+        workflow_url = workflow.get("workflowUrl", "")
+
+        rows.append([
+            create_table_cell_raw(pipeline),
+            create_table_cell_raw(workspace),
+            create_table_cell_raw(compute),
+            create_table_cell_raw(status_text),
+            create_table_cell_link("View Run", workflow_url) if workflow_url and workflow_url != "-" else create_table_cell_raw("-"),
+        ])
+
+    # Create table block with column settings
+    table_block = {
+        "type": "table",
+        "column_settings": [
+            {"align": "left", "is_wrapped": True},  # Pipeline (allow wrapping)
+            {"align": "left"},  # Workspace
+            {"align": "left"},  # Compute Environment
+            {"align": "left"},  # Status
+            {"align": "center"},  # Link
+        ],
+        "rows": rows
+    }
+
+    return table_block
+
+
+def split_workflows_for_messages(
+    parsed_data: List[Dict[str, Any]],
+    max_rows_per_table: int = SLACK_TABLE_MAX_ROWS
+) -> List[List[Dict[str, Any]]]:
+    """
+    Split workflows into batches for Slack table blocks.
+    Slack table blocks support maximum 100 rows (including header).
+
+    Args:
+        parsed_data (list): List of all workflow data.
+        max_rows_per_table (int): Maximum data rows per table (default SLACK_TABLE_MAX_ROWS).
+
+    Returns:
+        list: List of workflow batches, each with max SLACK_TABLE_MAX_ROWS workflows.
+    """
+    if not parsed_data:
+        return []
+
+    # Split into batches of max_rows_per_table
+    batches = []
+    for i in range(0, len(parsed_data), max_rows_per_table):
+        batch = parsed_data[i:i + max_rows_per_table]
+        batches.append(batch)
+
+    return batches
+
+
 def send_slack_message(
     extracted_data: List[Dict["str", Any]],
     data_to_send: Dict[str, str],
@@ -307,42 +483,99 @@ def send_slack_message(
     slack_channel: str,
 ) -> None:
     """
-    Send a Slack message with the workflow metadata as a formatted table.
+    Send Slack message(s) with workflow metadata using table blocks and upload JSON file as threaded reply.
+    Will send multiple messages if more than SLACK_TABLE_MAX_ROWS workflows (table block limit).
 
     Args:
         extracted_data (list): The list of dictionaries containing the workflow metadata.
         data_to_send (dict): The dictionary the name of each table element (as keys) with each field within the dictionary to send as a value.
-        filepath (str): The path to the JSON file to attach to the Slack message. Can be zipped up for convenience.
+        filepath (Path): The path to the JSON file to attach to the Slack message. Can be zipped up for convenience.
         slack_channel (str): The Slack channel to send the message to.
     Returns:
         None
     """
     parsed_data = [parse_json(x, data_to_send) for x in extracted_data]
 
-    table = tabulate(parsed_data, headers="keys", tablefmt="plain", missingval="-")
+    # Calculate summary statistics and determine attachment color
+    summary = build_workflow_summary(parsed_data)
+    if summary["failed"] > 0:
+        color = "#FF0000"  # Red for failures
+    elif summary["succeeded"] == summary["total"]:
+        color = "#36A64F"  # Green for all success
+    else:
+        color = "#FFB84D"  # Orange for mixed results
 
-    # Send Slack Message
-    # webhookclient = WebhookClient(os.environ["SLACK_HOOK_URL"])
-    # response = webhookclient.send(
-    #     text="```" + table + "```", headers={"Content-type": "application/json"}
-    # )
-
-    # We can possibly attach the JSON as a file but not supported by API
-    # We might be able to use file.upload API: https://api.slack.com/tutorials/uploading-files-with-python
-    webclient = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
-    _auth_test = webclient.auth_test()
-    if not _auth_test.data.get("ok", False):
+    # Initialize Slack client
+    slack_client = WebClient(token=os.environ["SLACK_BOT_TOKEN"])
+    auth_result = slack_client.auth_test()
+    if not auth_result.get("ok", False):
         raise Exception("Invalid Slack token")
 
-    file_upload = webclient.files_upload_v2(
-        title=filepath.stem,
-        file=filepath.as_posix(),
-        initial_comment="```" + table + "```",
-        channel=slack_channel,
-    )
+    # Split workflows into batches of SLACK_TABLE_MAX_ROWS
+    workflow_batches = split_workflows_for_messages(parsed_data, max_rows_per_table=SLACK_TABLE_MAX_ROWS)
+    num_messages = len(workflow_batches)
 
-    if file_upload.status_code != 200:
-        raise Exception("Error with Slack file upload")
+    logging.info(f"Sending {num_messages} Slack message(s) with {len(parsed_data)} total workflows")
+
+    # Create fallback text with summary statistics for notifications
+    fallback_text = f"Workflow Report ({summary['total']} workflows: {summary['succeeded']} ✅, {summary['failed']} ❌)"
+
+    # Send each batch as a separate message
+    for idx, batch in enumerate(workflow_batches):
+        message_num = idx + 1
+
+        # Build blocks for message
+        blocks = []
+
+        # Add part indicator if multiple messages
+        if num_messages > 1:
+            part_block = {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"_Part {message_num} of {num_messages}_ (Showing {len(batch)} workflows)"
+                }
+            }
+            blocks.append(part_block)
+
+        # Build table block for this batch
+        table_block = build_table_block(batch)
+
+        # Post message with table first, then upload file as threaded reply
+        if message_num == 1:
+            # Step 1: Post the main message with summary and table
+            # Table blocks MUST be in attachments, not in main blocks array
+            message_response = slack_client.chat_postMessage(
+                channel=slack_channel,
+                blocks=blocks,
+                attachments=[{"color": color, "blocks": [table_block]}],
+                text=fallback_text,
+            )
+            if not message_response.get("ok", False):
+                raise Exception(f"Error posting Slack message: {message_response}")
+
+            # Step 2: Upload file as a threaded reply to the main message
+            # Get the message timestamp (ts) to use as thread_ts
+            parent_ts = message_response["ts"]
+            file_response = slack_client.files_upload_v2(
+                title=filepath.stem,
+                file=filepath.as_posix(),
+                channel=slack_channel,
+                thread_ts=parent_ts,  # Attach file as reply in thread
+            )
+            if not file_response.get("ok", False):
+                raise Exception(f"Error with Slack file upload: {file_response}")
+        else:
+            # Subsequent messages (for >SLACK_TABLE_MAX_ROWS workflows) - just post with table
+            # Include summary stats in fallback text for notifications
+            response = slack_client.chat_postMessage(
+                channel=slack_channel,
+                blocks=blocks,
+                attachments=[{"color": color, "blocks": [table_block]}],
+                text=f"{fallback_text} - Part {message_num} of {num_messages}",
+            )
+            if not response.get("ok", False):
+                raise Exception(f"Error posting Slack message: {response}")
 
 
 def main() -> None:
