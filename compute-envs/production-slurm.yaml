@@ -2,7 +2,7 @@ compute-envs:
   - ref: slurm
     name: seqera_slurm
     workdir: /home/seqera/work
-    workspace: "138659136604200"
+    workspace: "48548323160783"
     profiles: []  # Default profiles for pipelines without specific mappings
     profile_mappings:
       # Apply singularity profile to nf-core pipelines
