@@ -80,7 +80,7 @@ compute-envs:
   - ref: aws
     name: seqera_aws_ireland_fusionv2_nvme
     workdir: s3://seqera-showcase
-    workspace: '138659136604200'
+    workspace: ''
     profiles: []  # Default profiles for all pipelines
 ```
 
@@ -91,7 +91,7 @@ compute-envs:
   - ref: slurm
     name: seqera_slurm
     workdir: /home/seqera/work
-    workspace: '138659136604200'
+    workspace: ''
     profiles: []  # Default profiles for pipelines without specific mappings
     profile_mappings:
       # Apply singularity profile to nf-core pipelines
@@ -122,7 +122,7 @@ include:
       ref: aws
       name: seqera_aws_ireland_fusionv2_nvme
       workdir: s3://seqera-showcase
-      workspace: '138659136604200'
+      workspace: ''
 ```
 
 #### `exclude`
