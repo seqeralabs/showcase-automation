@@ -267,7 +267,9 @@ def delete_run_on_platform(
 
     # Skip deletion if workflow failed to launch (no workflow ID)
     if run_info["workflow"]["id"] is None:
-        logging.info(f"Skipping deletion for failed launch: {run_info['workflow-info']['workflowName']}")
+        logging.info(
+            f"Skipping deletion for failed launch: {run_info['workflow-info']['workflowName']}"
+        )
         return default_output
 
     # Check if run finish and delete if true
@@ -276,7 +278,9 @@ def delete_run_on_platform(
             logging.info(f"Deleting run {run_info['workflow']['id']}")
 
             # Get workspaceId from workflow-metadata (successful launches) or workflow-info (failed launches)
-            workspace_id = run_info.get("workflow-metadata", {}).get("workspaceId") or run_info["workflow-info"].get("workspaceId")
+            workspace_id = run_info.get("workflow-metadata", {}).get(
+                "workspaceId"
+            ) or run_info["workflow-info"].get("workspaceId")
 
             args = [
                 "delete",
@@ -357,15 +361,9 @@ def create_table_cell_link(text: str, url: str) -> Dict[str, Any]:
         "elements": [
             {
                 "type": "rich_text_section",
-                "elements": [
-                    {
-                        "type": "link",
-                        "text": text,
-                        "url": url
-                    }
-                ]
+                "elements": [{"type": "link", "text": text, "url": url}],
             }
-        ]
+        ],
     }
 
 
@@ -393,9 +391,43 @@ def build_workflow_summary(parsed_data: List[Dict[str, Any]]) -> Dict[str, int]:
     return summary
 
 
+def sort_workflows(workflows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Sort workflows by: status (failed first), pipeline name, compute env, workspace.
+
+    Args:
+        workflows: List of workflow dictionaries.
+
+    Returns:
+        Sorted list of workflows.
+    """
+    # Define status priority (lower number = higher priority = appears first)
+    status_priority = {
+        "FAILED": 1,
+        "UNKNOWN": 2,
+        "CANCELLED": 3,
+        "RUNNING": 4,
+        "SUBMITTED": 5,
+        "SUCCEEDED": 6,
+    }
+
+    def sort_key(workflow: Dict[str, Any]) -> tuple:
+        status = workflow.get("status", "UNKNOWN").upper()
+        pipeline = workflow.get("pipeline", "").lower()
+        compute = workflow.get("computeEnv", "").lower()
+        workspace = workflow.get("workspace", "").lower()
+
+        # Get priority (default to 2 for unknown statuses)
+        priority = status_priority.get(status, 2)
+
+        return (priority, pipeline, compute, workspace)
+
+    return sorted(workflows, key=sort_key)
+
+
 def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Build a Slack table block to display workflows in their original order.
+    Build a Slack table block to display workflows sorted by status, pipeline, compute env, and workspace.
 
     Args:
         parsed_data (list): List of parsed workflow data (max 100 rows).
@@ -403,20 +435,25 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     Returns:
         dict: A Slack table block.
     """
+    # Sort workflows before building table
+    sorted_data = sort_workflows(parsed_data)
+
     # Build table rows
     rows = []
 
     # Header row - match original column order: pipeline, workspace, computeEnv, status, workflowUrl
-    rows.append([
-        create_table_cell_raw("Pipeline"),
-        create_table_cell_raw("Workspace"),
-        create_table_cell_raw("Compute Environment"),
-        create_table_cell_raw("Status"),
-        create_table_cell_raw("Link"),
-    ])
+    rows.append(
+        [
+            create_table_cell_raw("Pipeline"),
+            create_table_cell_raw("Workspace"),
+            create_table_cell_raw("Compute Environment"),
+            create_table_cell_raw("Status"),
+            create_table_cell_raw("Link"),
+        ]
+    )
 
-    # Data rows - preserve original order
-    for workflow in parsed_data:
+    # Data rows - sorted by status (failed first), then pipeline, then compute env, then workspace
+    for workflow in sorted_data:
         status = workflow.get("status", "UNKNOWN")
         emoji = get_status_emoji(status)
         status_text = f"{emoji} {status}"
@@ -425,13 +462,19 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         compute = workflow.get("computeEnv", "-")
         workflow_url = workflow.get("workflowUrl", "")
 
-        rows.append([
-            create_table_cell_raw(pipeline),
-            create_table_cell_raw(workspace),
-            create_table_cell_raw(compute),
-            create_table_cell_raw(status_text),
-            create_table_cell_link("View Run", workflow_url) if workflow_url and workflow_url != "-" else create_table_cell_raw("-"),
-        ])
+        rows.append(
+            [
+                create_table_cell_raw(pipeline),
+                create_table_cell_raw(workspace),
+                create_table_cell_raw(compute),
+                create_table_cell_raw(status_text),
+                (
+                    create_table_cell_link("View Run", workflow_url)
+                    if workflow_url and workflow_url != "-"
+                    else create_table_cell_raw("-")
+                ),
+            ]
+        )
 
     # Create table block with column settings
     table_block = {
@@ -443,15 +486,14 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
             {"align": "left"},  # Status
             {"align": "center"},  # Link
         ],
-        "rows": rows
+        "rows": rows,
     }
 
     return table_block
 
 
 def split_workflows_for_messages(
-    parsed_data: List[Dict[str, Any]],
-    max_rows_per_table: int = SLACK_TABLE_MAX_ROWS
+    parsed_data: List[Dict[str, Any]], max_rows_per_table: int = SLACK_TABLE_MAX_ROWS
 ) -> List[List[Dict[str, Any]]]:
     """
     Split workflows into batches for Slack table blocks.
@@ -470,7 +512,7 @@ def split_workflows_for_messages(
     # Split into batches of max_rows_per_table
     batches = []
     for i in range(0, len(parsed_data), max_rows_per_table):
-        batch = parsed_data[i:i + max_rows_per_table]
+        batch = parsed_data[i : i + max_rows_per_table]
         batches.append(batch)
 
     return batches
@@ -512,10 +554,14 @@ def send_slack_message(
         raise Exception("Invalid Slack token")
 
     # Split workflows into batches of SLACK_TABLE_MAX_ROWS
-    workflow_batches = split_workflows_for_messages(parsed_data, max_rows_per_table=SLACK_TABLE_MAX_ROWS)
+    workflow_batches = split_workflows_for_messages(
+        parsed_data, max_rows_per_table=SLACK_TABLE_MAX_ROWS
+    )
     num_messages = len(workflow_batches)
 
-    logging.info(f"Sending {num_messages} Slack message(s) with {len(parsed_data)} total workflows")
+    logging.info(
+        f"Sending {num_messages} Slack message(s) with {len(parsed_data)} total workflows"
+    )
 
     # Create fallback text with summary statistics for notifications
     fallback_text = f"Workflow Report ({summary['total']} workflows: {summary['succeeded']} ✅, {summary['failed']} ❌)"
@@ -533,8 +579,8 @@ def send_slack_message(
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"_Part {message_num} of {num_messages}_ (Showing {len(batch)} workflows)"
-                }
+                    "text": f"_Part {message_num} of {num_messages}_ (Showing {len(batch)} workflows)",
+                },
             }
             blocks.append(part_block)
 
