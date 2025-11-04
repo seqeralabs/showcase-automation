@@ -412,15 +412,17 @@ def sort_workflows(workflows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     }
 
     def sort_key(workflow: Dict[str, Any]) -> tuple:
-        status = workflow.get("status", "UNKNOWN").upper()
-        pipeline = workflow.get("pipeline", "").lower()
-        compute = workflow.get("computeEnv", "").lower()
-        workspace = workflow.get("workspace", "").lower()
+        status = workflow.get("status", "UNKNOWN")
+        status = status.upper() if status else "UNKNOWN"
+
+        pipeline = workflow.get("pipeline", "") or ""
+        compute = workflow.get("computeEnv", "") or ""
+        workspace = workflow.get("workspace", "") or ""
 
         # Get priority (default to 2 for unknown statuses)
         priority = status_priority.get(status, 2)
 
-        return (priority, pipeline, compute, workspace)
+        return (priority, pipeline.lower(), compute.lower(), workspace.lower())
 
     return sorted(workflows, key=sort_key)
 
