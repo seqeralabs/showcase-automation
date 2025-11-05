@@ -202,10 +202,14 @@ def create_failure_to_launch_workflow_data(workflow: dict[str, Any]) -> Dict[str
     Returns:
         dict: A dictionary containing the workflow information.
     """
+    # Extract just the pipeline name (first segment before underscore)
+    # to avoid displaying the full run_name with UUID and date
+    pipeline_name = workflow["workflowName"].split("_")[0]
+
     return {
         "workflow": {
             "id": None,
-            "projectName": workflow["workflowName"],
+            "projectName": pipeline_name,
             "status": "FAILED_TO_LAUNCH",
             "errorMessage": workflow["error"].strip(),
         },
