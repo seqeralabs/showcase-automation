@@ -238,8 +238,35 @@ def seqera_api_get(
     headers = get_headers()
     response = requests.get(url, headers=headers, params=params)
 
-    response.raise_for_status()  # Raise an exception for HTTP error codes
-    return response.json()
+    # Provide better error messages for common HTTP errors
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        if response.status_code == 403:
+            raise PermissionError(
+                f"Access denied to {endpoint}. "
+                f"Check that your TOWER_ACCESS_TOKEN has permissions for workspace(s): {params.get('workspaceId', 'N/A')}"
+            ) from e
+        elif response.status_code == 404:
+            raise ValueError(
+                f"Endpoint not found: {endpoint}. "
+                f"Check that the workspace ID is correct: {params.get('workspaceId', 'N/A')}"
+            ) from e
+        else:
+            raise
+
+    # Check if response has content before trying to parse JSON
+    if not response.content:
+        raise ValueError(f"Empty response from API endpoint: {endpoint}")
+
+    try:
+        return response.json()
+    except requests.exceptions.JSONDecodeError as e:
+        raise ValueError(
+            f"Invalid JSON response from {endpoint}. "
+            f"Status: {response.status_code}, "
+            f"Content: {response.text[:200]}"
+        ) from e
 
 
 def get_workspace_name(workspace_id: int) -> str:
