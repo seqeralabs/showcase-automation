@@ -238,7 +238,7 @@ class LaunchConfig(pydantic.BaseModel):
                 return default_response
 
         # If we fail to add the pipeline for a predictable reason we can log and continue
-        except seqeraplatform.ResourceCreationError as err:
+        except (seqeraplatform.CommandError, seqeraplatform.ResourceExistsError) as err:
             logging.info(
                 f"Failed to launch pipeline {run_name}. Logging and proceeding..."
             )
