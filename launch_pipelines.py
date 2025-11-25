@@ -229,13 +229,27 @@ class LaunchConfig(pydantic.BaseModel):
             args_list = parse_launch_block(args_dict)
             launched_pipeline = seqera.launch(*args_list, to_json=True)
 
-            # Parse JSON string if needed (tower-cli v0.15.0+ returns JSON string)
-            if isinstance(launched_pipeline, str):
-                launched_pipeline = json.loads(launched_pipeline)
-
             # If dryrun, return default response
             if seqera.dryrun:
                 return default_response
+
+            # Handle tower-cli v0.15.0 output format
+            # v0.15.0 returns human-readable text instead of JSON, so we need to parse it
+            if isinstance(launched_pipeline, str):
+                import re
+                # Extract workflow ID from output like "Workflow 39vq4VqxLkaSVK submitted"
+                workflow_id_match = re.search(r'Workflow (\w+) submitted', launched_pipeline)
+                # Extract URL from output
+                url_match = re.search(r'https://[^\s]+', launched_pipeline)
+                # Extract workspace info
+                workspace_match = re.search(r'\[([^\]]+)\] workspace', launched_pipeline)
+
+                launched_pipeline = {
+                    "workflowId": workflow_id_match.group(1) if workflow_id_match else None,
+                    "workflowUrl": url_match.group(0) if url_match else None,
+                    "workspaceId": None,
+                    "workspaceRef": workspace_match.group(1) if workspace_match else None,
+                }
 
         # If we fail to add the pipeline for a predictable reason we can log and continue
         except (seqeraplatform.CommandError, seqeraplatform.ResourceExistsError) as err:
@@ -248,12 +262,12 @@ class LaunchConfig(pydantic.BaseModel):
             default_response.update({"error": message})
             return default_response
 
-        # If we fail to add the pipeline for an unpredictable reason we log and fail
-        except json.decoder.JSONDecodeError as err:
-            logging.error(f"Failed to launch pipeline {run_name}.")
-            logging.debug(err.doc)
-            # Raise pipeline launch error here:
-            raise SeqeraKitError(err.doc)
+        # If we fail to parse the output, log and fail
+        except (AttributeError, ValueError) as err:
+            logging.error(f"Failed to parse pipeline launch output for {run_name}.")
+            logging.debug(str(err))
+            logging.debug(f"Output was: {launched_pipeline}")
+            raise SeqeraKitError(f"Failed to parse launch output: {err}")
 
         # Add pipeline launch info to dict
         launched_pipeline.update(
