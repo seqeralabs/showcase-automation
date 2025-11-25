@@ -234,7 +234,7 @@ class LaunchConfig(pydantic.BaseModel):
                 return default_response
 
         # If we fail to add the pipeline for a predictable reason we can log and continue
-        except seqeraplatform.ResourceCreationError as err:
+        except (seqeraplatform.CommandError, seqeraplatform.ResourceExistsError) as err:
             logging.info(
                 f"Failed to launch pipeline {run_name}. Logging and proceeding..."
             )
@@ -244,12 +244,11 @@ class LaunchConfig(pydantic.BaseModel):
             default_response.update({"error": message})
             return default_response
 
-        # If we fail to add the pipeline for an unpredictable reason we log and fail
+        # If we fail to parse JSON, log and fail
         except json.decoder.JSONDecodeError as err:
-            logging.error(f"Failed to launch pipeline {run_name}.")
+            logging.error(f"Failed to parse pipeline launch output for {run_name}.")
             logging.debug(err.doc)
-            # Raise pipeline launch error here:
-            raise SeqeraKitError(err.doc)
+            raise SeqeraKitError(f"Failed to parse launch output: {err.doc}")
 
         # Add pipeline launch info to dict
         launched_pipeline.update(
@@ -490,7 +489,7 @@ def main() -> None:
     args = parse_args()
     logging.basicConfig(level=logging.INFO)
 
-    seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun)
+    seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun, json=True)
 
     complete_launch_configs = read_yaml(args.inputs, args.pre_run, args.config)
 
