@@ -233,24 +233,6 @@ class LaunchConfig(pydantic.BaseModel):
             if seqera.dryrun:
                 return default_response
 
-            # Handle tower-cli v0.15.0 output format
-            # v0.15.0 returns human-readable text instead of JSON, so we need to parse it
-            if isinstance(launched_pipeline, str):
-                import re
-                # Extract workflow ID from output like "Workflow 39vq4VqxLkaSVK submitted"
-                workflow_id_match = re.search(r'Workflow (\w+) submitted', launched_pipeline)
-                # Extract URL from output
-                url_match = re.search(r'https://[^\s]+', launched_pipeline)
-                # Extract workspace info
-                workspace_match = re.search(r'\[([^\]]+)\] workspace', launched_pipeline)
-
-                launched_pipeline = {
-                    "workflowId": workflow_id_match.group(1) if workflow_id_match else None,
-                    "workflowUrl": url_match.group(0) if url_match else None,
-                    "workspaceId": None,
-                    "workspaceRef": workspace_match.group(1) if workspace_match else None,
-                }
-
         # If we fail to add the pipeline for a predictable reason we can log and continue
         except (seqeraplatform.CommandError, seqeraplatform.ResourceExistsError) as err:
             logging.info(
@@ -262,12 +244,11 @@ class LaunchConfig(pydantic.BaseModel):
             default_response.update({"error": message})
             return default_response
 
-        # If we fail to parse the output, log and fail
-        except (AttributeError, ValueError) as err:
+        # If we fail to parse JSON, log and fail
+        except json.decoder.JSONDecodeError as err:
             logging.error(f"Failed to parse pipeline launch output for {run_name}.")
-            logging.debug(str(err))
-            logging.debug(f"Output was: {launched_pipeline}")
-            raise SeqeraKitError(f"Failed to parse launch output: {err}")
+            logging.debug(err.doc)
+            raise SeqeraKitError(f"Failed to parse launch output: {err.doc}")
 
         # Add pipeline launch info to dict
         launched_pipeline.update(
@@ -508,7 +489,7 @@ def main() -> None:
     args = parse_args()
     logging.basicConfig(level=logging.INFO)
 
-    seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun)
+    seqera = seqeraplatform.SeqeraPlatform(dryrun=args.dryrun, json=True)
 
     complete_launch_configs = read_yaml(args.inputs, args.pre_run, args.config)
 
