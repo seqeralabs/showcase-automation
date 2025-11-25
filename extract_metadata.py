@@ -161,7 +161,6 @@ def get_runs_dump(
         tmp_file,
         "-w",
         str(workflow["workspaceId"]),
-        json=True,
     )
 
     output_file = decompress_and_recompress_tar(tmp_file, workflow, output_file)
@@ -297,10 +296,7 @@ def delete_run_on_platform(
             if force:
                 args.extend(["--force"])
 
-            delete_dict = seqera.runs(
-                *args,
-                to_json=True,
-            )
+            delete_dict = seqera.runs(*args)
             delete_dict.update({"deleted": True})
 
             return delete_dict
@@ -634,7 +630,7 @@ def main() -> None:
     args = parse_args()
     logging.basicConfig(level=args.log_level)
 
-    seqera = seqeraplatform.SeqeraPlatform()
+    seqera = seqeraplatform.SeqeraPlatform(json=True)
 
     logging.info("Reading workflow details from JSON file...")
     workflow_details = []
