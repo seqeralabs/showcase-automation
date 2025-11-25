@@ -229,6 +229,10 @@ class LaunchConfig(pydantic.BaseModel):
             args_list = parse_launch_block(args_dict)
             launched_pipeline = seqera.launch(*args_list, to_json=True)
 
+            # Parse JSON string if needed (tower-cli v0.15.0+ returns JSON string)
+            if isinstance(launched_pipeline, str):
+                launched_pipeline = json.loads(launched_pipeline)
+
             # If dryrun, return default response
             if seqera.dryrun:
                 return default_response
