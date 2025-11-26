@@ -447,26 +447,19 @@ def get_default_slack_header() -> str:
 
 def build_header_block(header_text: str) -> Dict[str, Any]:
     """
-    Build a Slack header block with the provided text.
+    Build a Slack section block with the provided text.
 
     Args:
-        header_text: Text to display in the header.
+        header_text: Text to display (supports emojis and markdown).
 
     Returns:
-        Dict containing Slack header block structure.
+        Dict containing Slack section block structure.
     """
-    MAX_HEADER_LENGTH = 150  # Slack's limit for header block
-
-    # Truncate if too long
-    if len(header_text) > MAX_HEADER_LENGTH:
-        header_text = header_text[:MAX_HEADER_LENGTH - 3] + "..."
-
     return {
-        "type": "header",
+        "type": "section",
         "text": {
-            "type": "plain_text",
-            "text": header_text,
-            "emoji": False
+            "type": "mrkdwn",
+            "text": header_text
         }
     }
 
