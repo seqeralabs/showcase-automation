@@ -1,5 +1,0 @@
-compute-envs:
-  - ref: seqera-compute
-    name: Seqera-Compute
-    workdir: s3://seqera-compute-hmgspj0gb
-    workspace: "14715071736572"
