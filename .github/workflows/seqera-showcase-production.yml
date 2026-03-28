@@ -70,6 +70,11 @@ on:
         default: false
         type: boolean
         required: false
+      slack_header:
+        description: "Custom Slack header message"
+        default: "Seqera Platform Production"
+        type: string
+        required: false
 
   schedule:
     # Every 2am
@@ -184,6 +189,7 @@ jobs:
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
             --slack_channel ${{ secrets.SLACK_CHANNEL }} \
+            --slack_header "${{ inputs.slack_header }}: $TOWER_API_ENDPOINT" \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack == true ) && '--slack' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove == true ) && '--delete' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.force == true ) && '--force' || '' }}
