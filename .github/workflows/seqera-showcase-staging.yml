@@ -132,7 +132,7 @@ jobs:
             ${{ (github.event_name == 'workflow_dispatch' && inputs.disable_optimization == false) && '' || '--disable-optimization' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # ratchet:actions/upload-artifact@v4
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # ratchet:actions/upload-artifact@v7.0.0
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
           path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
@@ -185,7 +185,7 @@ jobs:
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove == true ) && '--delete' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.force == true ) && '--force' || '' }}
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # ratchet:actions/upload-artifact@v4
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # ratchet:actions/upload-artifact@v7.0.0
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data
           path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json
