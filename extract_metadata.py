@@ -681,13 +681,7 @@ def main() -> None:
             try:
                 tar_file = get_runs_dump(seqera, workflow)
                 extracted_data.append(extract_workflow_data(tar_file))
-            except (
-                seqeraplatform.ResourceCreationError,
-                seqeraplatform.ResourceExistsError,
-                json.JSONDecodeError,
-                tarfile.TarError,
-                OSError,
-            ) as err:
+            except Exception as err:
                 message = "\n".join(str(a) for a in err.args)
                 logging.error(
                     f"Failed to extract data for workflow {workflow['workflowId']}. "
