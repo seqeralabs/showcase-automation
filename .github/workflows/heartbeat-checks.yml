@@ -25,7 +25,7 @@ jobs:
             pipeline: heartbeat-nf-core-rnaseq-google-test-full
 
     steps:
-      - uses: seqeralabs/action-tower-launch@d5dc89d1eb89e71286667112adaae0330aa28c7c
+      - uses: seqeralabs/action-tower-launch@51565b514bff1827cf34620de25d0055759f1fc9
         with:
           access_token: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
           run_name: heartbeat-${{ matrix.launch.name }}-${{ github.run_id }}
@@ -33,7 +33,7 @@ jobs:
           pipeline: ${{ matrix.launch.pipeline }}
           api_endpoint: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # ratchet:actions/upload-artifact@v4
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # ratchet:actions/upload-artifact@v7.0.0
         if: success() || failure()
         with:
           name: tower_logs_run_${{ matrix.launch.name }}_${{ github.run_id }}
