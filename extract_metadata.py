@@ -480,9 +480,10 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     # Build table rows
     rows = []
 
-    # Header row - match original column order: pipeline, workspace, computeEnv, status, workflowUrl
+    # Header row
     rows.append(
         [
+            create_table_cell_raw("Run ID"),
             create_table_cell_raw("Pipeline"),
             create_table_cell_raw("Workspace"),
             create_table_cell_raw("Compute Environment"),
@@ -496,6 +497,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         status = workflow.get("status", "UNKNOWN")
         emoji = get_status_emoji(status)
         status_text = f"{emoji} {status}"
+        run_id = workflow.get("runId", "-")
         pipeline = workflow.get("pipeline", "Unknown")
         workspace = workflow.get("workspace", "-")
         compute = workflow.get("computeEnv", "-")
@@ -503,6 +505,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         rows.append(
             [
+                create_table_cell_raw(run_id if run_id else "-"),
                 create_table_cell_raw(pipeline),
                 create_table_cell_raw(workspace),
                 create_table_cell_raw(compute),
@@ -519,6 +522,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     table_block = {
         "type": "table",
         "column_settings": [
+            {"align": "left"},  # Run ID
             {"align": "left", "is_wrapped": True},  # Pipeline (allow wrapping)
             {"align": "left"},  # Workspace
             {"align": "left"},  # Compute Environment
@@ -726,6 +730,7 @@ def main() -> None:
     if args.slack:
         # Get critical info, flatten and rename to user friendly values
         data_to_extract = {
+            "runId": "workflow.id",
             "pipeline": "workflow.projectName",
             "workspace": "workflow-info.workspaceRef",
             "computeEnv": "workflow-launch.computeEnv.name",
