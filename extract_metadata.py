@@ -192,6 +192,33 @@ def extract_workflow_data(tar_file: str) -> Dict[str, Any]:
     return extracted_data
 
 
+def create_failure_to_extract_workflow_data(
+    workflow: dict[str, Any], error: str
+) -> Dict[str, Any]:
+    """
+    Create a dictionary containing the workflow information for a workflow that
+    launched successfully but failed during data extraction (dump or parse).
+
+    Args:
+        workflow (dict): The dictionary containing the workflow information.
+        error (str): The error message from the failure.
+    Returns:
+        dict: A dictionary containing the workflow information.
+    """
+    pipeline_name = workflow["workflowName"].split("_")[0]
+
+    return {
+        "workflow": {
+            "id": workflow["workflowId"],
+            "projectName": pipeline_name,
+            "status": "FAILED_TO_EXTRACT",
+            "errorMessage": error.strip(),
+        },
+        "workflow-info": workflow,
+        "workflow-launch": {"computeEnv": {"name": workflow["computeEnvironment"]}},
+    }
+
+
 def create_failure_to_launch_workflow_data(workflow: dict[str, Any]) -> Dict[str, Any]:
     """
     Create a dictionary containing the workflow information for a workflow that failed to launch.
@@ -321,6 +348,7 @@ def get_status_emoji(status: str) -> str:
         "SUCCEEDED": "✅",
         "FAILED": "❌",
         "FAILED_TO_LAUNCH": "🚫",
+        "FAILED_TO_EXTRACT": "💥",
         "RUNNING": "🚀",
         "SUBMITTED": "⏳",
         "CANCELLED": "⏸️",
@@ -383,7 +411,7 @@ def build_workflow_summary(parsed_data: List[Dict[str, Any]]) -> Dict[str, int]:
         status = workflow.get("status", "UNKNOWN")
         if status == "SUCCEEDED":
             summary["succeeded"] += 1
-        elif status in ("FAILED", "FAILED_TO_LAUNCH"):
+        elif status in ("FAILED", "FAILED_TO_LAUNCH", "FAILED_TO_EXTRACT"):
             summary["failed"] += 1
         else:
             summary["other"] += 1
@@ -404,6 +432,7 @@ def sort_workflows(workflows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     # Define status priority (lower number = higher priority = appears first)
     status_priority = {
         "FAILED": 1,
+        "FAILED_TO_EXTRACT": 1,
         "UNKNOWN": 2,
         "CANCELLED": 3,
         "RUNNING": 4,
@@ -448,6 +477,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         [
             create_table_cell_raw("Pipeline"),
             create_table_cell_raw("Workspace"),
+            create_table_cell_raw("Workspace ID"),
             create_table_cell_raw("Compute Environment"),
             create_table_cell_raw("Status"),
             create_table_cell_raw("Link"),
@@ -461,6 +491,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         status_text = f"{emoji} {status}"
         pipeline = workflow.get("pipeline", "Unknown")
         workspace = workflow.get("workspace", "-")
+        workspace_id = workflow.get("workspaceId", "-")
         compute = workflow.get("computeEnv", "-")
         workflow_url = workflow.get("workflowUrl", "")
 
@@ -468,6 +499,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
             [
                 create_table_cell_raw(pipeline),
                 create_table_cell_raw(workspace),
+                create_table_cell_raw(workspace_id if workspace_id else "-"),
                 create_table_cell_raw(compute),
                 create_table_cell_raw(status_text),
                 (
@@ -484,6 +516,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         "column_settings": [
             {"align": "left", "is_wrapped": True},  # Pipeline (allow wrapping)
             {"align": "left"},  # Workspace
+            {"align": "left"},  # Workspace ID
             {"align": "left"},  # Compute Environment
             {"align": "left"},  # Status
             {"align": "center"},  # Link
@@ -640,19 +673,31 @@ def main() -> None:
             workflow_details.append(json.load(infile))
 
     logging.info("Getting workflow run data...")
-    # Flattens list of lists containing dicts
-    tar_files = [
-        get_runs_dump(seqera, workflow)
-        for workflowList in workflow_details
-        for workflow in workflowList
-        if workflow["launchSuccess"]
-    ]
+    extracted_data = []
+    for workflowList in workflow_details:
+        for workflow in workflowList:
+            if not workflow["launchSuccess"]:
+                continue
+            try:
+                tar_file = get_runs_dump(seqera, workflow)
+                extracted_data.append(extract_workflow_data(tar_file))
+            except (
+                seqeraplatform.ResourceCreationError,
+                seqeraplatform.ResourceExistsError,
+                json.JSONDecodeError,
+                tarfile.TarError,
+                OSError,
+            ) as err:
+                message = "\n".join(str(a) for a in err.args)
+                logging.error(
+                    f"Failed to extract data for workflow {workflow['workflowId']}. "
+                    f"Logging and proceeding... Error: {message}"
+                )
+                extracted_data.append(
+                    create_failure_to_extract_workflow_data(workflow, message)
+                )
 
-    logging.info("Extracting workflow metadata...")
-    extracted_data = [extract_workflow_data(tar_file) for tar_file in tar_files]
-
-    # Add failed runs for reporting
-    # Create fake JSON dump
+    # Add failed launches for reporting
     failed_runs = [
         create_failure_to_launch_workflow_data(workflow)
         for workflowList in workflow_details
@@ -678,6 +723,7 @@ def main() -> None:
         data_to_extract = {
             "pipeline": "workflow.projectName",
             "workspace": "workflow-info.workspaceRef",
+            "workspaceId": "workflow-info.workspaceId",
             "computeEnv": "workflow-launch.computeEnv.name",
             "status": "workflow.status",
             "workflowUrl": "workflow-metadata.runUrl",
