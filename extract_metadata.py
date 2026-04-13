@@ -497,7 +497,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         status = workflow.get("status", "UNKNOWN")
         emoji = get_status_emoji(status)
         status_text = f"{emoji} {status}"
-        run_id = workflow.get("runId", "-")
+        run_id = workflow["runId"]
         pipeline = workflow.get("pipeline", "Unknown")
         workspace = workflow.get("workspace", "-")
         compute = workflow.get("computeEnv", "-")
