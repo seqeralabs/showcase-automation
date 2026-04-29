@@ -310,7 +310,9 @@ def delete_run_on_platform(
             delete_dict.update({"deleted": True})
 
             return delete_dict
-        except json.JSONDecodeError as err:
+        except (json.JSONDecodeError, seqeraplatform.CommandError) as err:
+            # CommandError covers transient backend failures (e.g. 502 Bad Gateway)
+            # so a single failed delete doesn't abort the rest of the cleanup loop.
             logging.error(f"Error deleting run {run_info['workflow']['id']}: {err}")
         return default_output
     else:
