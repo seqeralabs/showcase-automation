@@ -153,15 +153,25 @@ def get_runs_dump(
     output_file = f"{workflow['workflowId']}.tar.gz"
     tmp_file = f"tmp.{output_file}"
     logging.debug(f"Using tmpfile: {tmp_file}")
-    seqera.runs(
-        "dump",
-        "-id",
-        workflow["workflowId"],
-        "-o",
-        tmp_file,
-        "-w",
-        str(workflow["workspaceId"]),
-    )
+    try:
+        seqera.runs(
+            "dump",
+            "-id",
+            workflow["workflowId"],
+            "-o",
+            tmp_file,
+            "-w",
+            str(workflow["workspaceId"]),
+        )
+    except seqeraplatform.CommandError as err:
+        # `tw runs dump` exits non-zero when an optional sub-section (e.g. nextflow.log)
+        # fails on the backend, but still writes a tarball with the core JSON files
+        # the script consumes. Tolerate partial failures when the tarball was produced.
+        if not Path(tmp_file).exists():
+            raise
+        logging.warning(
+            f"Partial dump for {workflow['workflowId']}: {err}. Proceeding with tarball."
+        )
 
     output_file = decompress_and_recompress_tar(tmp_file, workflow, output_file)
     os.remove(tmp_file)
