@@ -1,0 +1,5 @@
+compute-envs:
+  - ref: seqera-intelligent-compute
+    name: seqera_aws_intelligent_compute_ireland
+    workdir: s3://seqera-showcase/scratch/cicd/intelligent-compute
+    workspace: "14715071736572"
