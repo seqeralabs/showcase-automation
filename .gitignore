@@ -18,3 +18,9 @@ build/
 **.zip
 
 .idea/
+
+# Agent planning docs (personal, not committed)
+# Both forms: directory and bare name (the latter covers symlinks, which is
+# the preferred .plans layout when working in git worktrees).
+.plans/
+.plans
