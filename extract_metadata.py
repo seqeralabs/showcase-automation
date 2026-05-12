@@ -505,7 +505,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         rows.append(
             [
-                create_table_cell_raw(run_id if run_id else "-"),
+                create_table_cell_raw(run_id),
                 create_table_cell_raw(pipeline),
                 create_table_cell_raw(workspace),
                 create_table_cell_raw(compute),
