@@ -76,9 +76,9 @@ on:
         type: string
         required: false
 
-  # schedule:
-  #   # Every 2am
-  #   - cron: "0 2 * * *"
+        # schedule:
+        #   # Every 2am
+        #   - cron: "0 2 * * *"
 
 env:
   TOWER_API_ENDPOINT: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
@@ -98,10 +98,10 @@ jobs:
     env:
       TOWER_ACCESS_TOKEN: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6.0.2
 
       - name: setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # ratchet:actions/setup-python@v6.2.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -113,7 +113,7 @@ jobs:
       - name: install tw cli
         run: |
           set -euo pipefail
-          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.15.0/tw-linux-x86_64
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.31.0/tw-linux-x86_64
           mv tw-* tw
           chmod +x tw
           sudo mv tw /usr/local/bin/
@@ -137,7 +137,7 @@ jobs:
             ${{ (github.event_name == 'workflow_dispatch' && inputs.disable_optimization == false) && '' || '--disable-optimization' }} \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
           path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}.json
@@ -151,8 +151,8 @@ jobs:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6.0.2
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # ratchet:actions/download-artifact@v8.0.1
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_launch_json
           path: run_details
@@ -160,7 +160,7 @@ jobs:
       - name: Install tw CLI
         run: |
           set -euo pipefail
-          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.15.0/tw-linux-x86_64
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.31.0/tw-linux-x86_64
           mv tw-* tw
           chmod +x tw
           sudo mv tw /usr/local/bin/
@@ -170,7 +170,7 @@ jobs:
           tw --version
 
       - name: setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # ratchet:actions/setup-python@v6.2.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -191,7 +191,7 @@ jobs:
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove == true ) && '--delete' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.force == true ) && '--force' || '' }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # ratchet:actions/upload-artifact@v7.0.1
         with:
           name: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data
           path: ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json
