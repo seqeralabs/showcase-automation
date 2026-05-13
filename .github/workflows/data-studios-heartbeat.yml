@@ -25,10 +25,10 @@ jobs:
       TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6.0.2
 
       - name: setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # ratchet:actions/setup-python@v6.2.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -40,7 +40,7 @@ jobs:
       - name: install tw cli
         run: |
           set -euo pipefail
-          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.15.0/tw-linux-x86_64
+          wget -L https://github.com/seqeralabs/tower-cli/releases/download/v0.31.0/tw-linux-x86_64
           mv tw-* tw
           chmod +x tw
           sudo mv tw /usr/local/bin/
