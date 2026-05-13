@@ -70,6 +70,11 @@ on:
         default: false
         type: boolean
         required: false
+      slack_header:
+        description: "Custom Slack header message"
+        default: "Seqera Platform Enterprise Staging"
+        type: string
+        required: false
 
 env:
   TOWER_API_ENDPOINT: ${{ secrets.STAGING_ENTERPRISE_TOWER_ACCESS_ENDPOINT }}
@@ -177,7 +182,7 @@ jobs:
             -l DEBUG \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
-            --slack_channel ${{ secrets.SLACK_CHANNEL }} \
+            --slack_channel ${{ secrets.SLACK_CHANNEL }}: $TOWER_API_ENDPOINT \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.slack == true ) && '--slack' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.remove == true ) && '--delete' || '' }} \
             ${{ ( github.event_name != 'workflow_dispatch' || inputs.force == true ) && '--force' || '' }}

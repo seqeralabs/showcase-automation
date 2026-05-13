@@ -37,7 +37,7 @@ from argparse import Namespace
 from pathlib import Path
 from seqerakit import seqeraplatform
 from slack_sdk.web import WebClient
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 # Slack table block maximum row limit (including header row)
@@ -97,6 +97,12 @@ def parse_args() -> Namespace:
         type=str,
         help="Slack channel to send message to",
         default="C054QAK3FLZ",
+    )
+    parser.add_argument(
+        "--slack_header",
+        type=str,
+        help="Custom header message for Slack notifications. If not provided, defaults to showing Seqera Platform API URL.",
+        default=None,
     )
     return parser.parse_args()
 
@@ -439,6 +445,37 @@ def sort_workflows(workflows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return sorted(workflows, key=sort_key)
 
 
+def get_default_slack_header() -> str:
+    """
+    Build default Slack header with Seqera Platform information.
+
+    Returns:
+        Default header string with Platform API URL.
+    """
+    # Default to production endpoint if not specified (same as seqerakit/tower CLI)
+    api_endpoint = os.environ.get("TOWER_API_ENDPOINT", "https://api.cloud.seqera.io")
+    return f"Seqera Platform: {api_endpoint}"
+
+
+def build_header_block(header_text: str) -> Dict[str, Any]:
+    """
+    Build a Slack section block with the provided text.
+
+    Args:
+        header_text: Text to display (supports emojis and markdown).
+
+    Returns:
+        Dict containing Slack section block structure.
+    """
+    return {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": header_text
+        }
+    }
+
+
 def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Build a Slack table block to display workflows sorted by status, pipeline, compute env, and workspace.
@@ -455,9 +492,10 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     # Build table rows
     rows = []
 
-    # Header row - match original column order: pipeline, workspace, computeEnv, status, workflowUrl
+    # Header row
     rows.append(
         [
+            create_table_cell_raw("Run ID"),
             create_table_cell_raw("Pipeline"),
             create_table_cell_raw("Workspace"),
             create_table_cell_raw("Compute Environment"),
@@ -471,6 +509,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         status = workflow.get("status", "UNKNOWN")
         emoji = get_status_emoji(status)
         status_text = f"{emoji} {status}"
+        run_id = workflow.get("runId", "-")
         pipeline = workflow.get("pipeline", "Unknown")
         workspace = workflow.get("workspace", "-")
         compute = workflow.get("computeEnv", "-")
@@ -478,6 +517,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         rows.append(
             [
+                create_table_cell_raw(run_id),
                 create_table_cell_raw(pipeline),
                 create_table_cell_raw(workspace),
                 create_table_cell_raw(compute),
@@ -494,6 +534,7 @@ def build_table_block(parsed_data: List[Dict[str, Any]]) -> Dict[str, Any]:
     table_block = {
         "type": "table",
         "column_settings": [
+            {"align": "left"},  # Run ID
             {"align": "left", "is_wrapped": True},  # Pipeline (allow wrapping)
             {"align": "left"},  # Workspace
             {"align": "left"},  # Compute Environment
@@ -537,6 +578,7 @@ def send_slack_message(
     data_to_send: Dict[str, str],
     filepath: Path,
     slack_channel: str,
+    slack_header: Optional[str] = None,
 ) -> None:
     """
     Send Slack message(s) with workflow metadata using table blocks and upload JSON file as threaded reply.
@@ -547,6 +589,7 @@ def send_slack_message(
         data_to_send (dict): The dictionary the name of each table element (as keys) with each field within the dictionary to send as a value.
         filepath (Path): The path to the JSON file to attach to the Slack message. Can be zipped up for convenience.
         slack_channel (str): The Slack channel to send the message to.
+        slack_header (str, optional): Custom header message for Slack notifications. If not provided, defaults to showing Seqera Platform API URL.
     Returns:
         None
     """
@@ -580,12 +623,23 @@ def send_slack_message(
     # Create fallback text with summary statistics for notifications
     fallback_text = f"Workflow Report ({summary['total']} workflows: {summary['succeeded']} ✅, {summary['failed']} ❌)"
 
+    # Determine header message
+    if slack_header is None:
+        header_message = get_default_slack_header()
+    else:
+        header_message = slack_header
+
     # Send each batch as a separate message
     for idx, batch in enumerate(workflow_batches):
         message_num = idx + 1
 
         # Build blocks for message
         blocks = []
+
+        # Add header (only on first message)
+        if message_num == 1:
+            header_block = build_header_block(header_message)
+            blocks.append(header_block)
 
         # Add part indicator if multiple messages
         if num_messages > 1:
@@ -688,6 +742,7 @@ def main() -> None:
     if args.slack:
         # Get critical info, flatten and rename to user friendly values
         data_to_extract = {
+            "runId": "workflow.id",
             "pipeline": "workflow.projectName",
             "workspace": "workflow-info.workspaceRef",
             "computeEnv": "workflow-launch.computeEnv.name",
@@ -699,6 +754,7 @@ def main() -> None:
             data_to_extract,
             zipfile_out,
             slack_channel=args.slack_channel,
+            slack_header=args.slack_header,
         )
 
     # On success, delete if pipeline succeeded
