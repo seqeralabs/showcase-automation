@@ -1,0 +1,5 @@
+compute-envs:
+  - ref: aws-cloud
+    name: seqera_aws_cloud
+    workdir: s3://seqera-showcase/scratch/cicd
+    workspace: "48548323160783"
