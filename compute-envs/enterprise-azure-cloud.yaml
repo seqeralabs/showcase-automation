@@ -1,0 +1,5 @@
+compute-envs:
+  - ref: azure-cloud
+    name: seqera_azure_cloud
+    workdir: az://seqeralabs-showcase
+    workspace: "80631102134985"
