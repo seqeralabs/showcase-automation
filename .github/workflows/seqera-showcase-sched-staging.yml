@@ -127,8 +127,8 @@ jobs:
           python launch_pipelines.py \
             -l DEBUG \
             -i \
-            pipelines/staging-sched*.yaml \
-            compute-envs/staging-sched*.yaml \
+            pipelines/sched-staging*.yaml \
+            compute-envs/sched-staging*.yaml \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.pre_run != '') && format('--pre_run "{0}"', inputs.pre_run) || ''}} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.config != '') && format('--config "{0}"', inputs.config) || '' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.launch_container) && format('--launch-container "{0}"', inputs.launch_container) || '' }} \
