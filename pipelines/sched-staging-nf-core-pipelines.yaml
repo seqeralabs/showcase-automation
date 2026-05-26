@@ -9,3 +9,8 @@ pipelines:
     latest: true
     profiles:
       - test
+  - name: viralrecon-nanopore
+    url: nf-core-viralrecon-nanopore-staging
+    latest: true
+    profiles:
+      - test
