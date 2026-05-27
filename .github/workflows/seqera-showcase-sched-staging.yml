@@ -76,7 +76,7 @@ on:
         type: string
         required: false
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 12 * * *"
 
 env:
   TOWER_API_ENDPOINT: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
