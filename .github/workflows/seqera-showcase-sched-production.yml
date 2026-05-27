@@ -1,4 +1,4 @@
-name: seqera-showcase-autotest-sched-staging
+name: seqera-showcase-autotest-sched-production
 run-name: run-pipelines
 # Triggers workflow runs on demand, with schedule, or on push.
 # workflow_dispatch: Manually trigger workflow from Actions tab.
@@ -72,16 +72,12 @@ on:
         required: false
       slack_header:
         description: "Custom Slack header message"
-        default: "Seqera Platform Staging"
+        default: "Seqera Platform Production"
         type: string
         required: false
 
-        # schedule:
-        #   # Every 2am
-        #   - cron: "0 2 * * *"
-
 env:
-  TOWER_API_ENDPOINT: ${{ secrets.STAGING_TOWER_ACCESS_ENDPOINT }}
+  TOWER_API_ENDPOINT: "https://api.cloud.seqera.io"
 
 # This workflow launches pipelines in Tower, waits for completion,
 # extracts metadata, and optionally sends Slack notifications.
@@ -96,7 +92,8 @@ jobs:
   launch:
     runs-on: ubuntu-latest
     env:
-      TOWER_ACCESS_TOKEN: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
+      PRE_RUN: ${{ github.event_name != 'workflow_dispatch' && 'true' || inputs.pre_run }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6.0.2
 
@@ -127,8 +124,10 @@ jobs:
           python launch_pipelines.py \
             -l DEBUG \
             -i \
-            pipelines/staging*.yaml \
-            compute-envs/sched-staging*.yaml \
+            pipelines/production*.yaml \
+            compute-envs/sched-production*.yaml \
+            include/*.yaml \
+            exclude/* \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.pre_run != '') && format('--pre_run "{0}"', inputs.pre_run) || ''}} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.config != '') && format('--config "{0}"', inputs.config) || '' }} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.launch_container) && format('--launch-container "{0}"', inputs.launch_container) || '' }} \
@@ -147,7 +146,7 @@ jobs:
     needs: [launch]
     environment: ${{ inputs.timer || 'delay60mins' }}
     env:
-      TOWER_ACCESS_TOKEN: ${{ secrets.STAGING_TOWER_ACCESS_TOKEN }}
+      TOWER_ACCESS_TOKEN: ${{ secrets.TOWER_ACCESS_TOKEN }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
     steps:
