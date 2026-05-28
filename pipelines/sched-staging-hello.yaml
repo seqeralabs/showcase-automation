@@ -1,5 +1,0 @@
-pipelines:
-  - name: hello
-    url: hello-staging
-    latest: true
-    profiles: []

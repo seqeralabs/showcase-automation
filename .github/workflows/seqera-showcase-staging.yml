@@ -128,7 +128,6 @@ jobs:
             -l DEBUG \
             -i \
             pipelines/staging*.yaml \
-            pipelines/sched-staging*.yaml \
             compute-envs/staging*.yaml \
             compute-envs/sched-staging*.yaml \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.pre_run != '') && format('--pre_run "{0}"', inputs.pre_run) || ''}} \
