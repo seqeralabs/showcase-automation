@@ -1,0 +1,5 @@
+compute-envs:
+  - ref: azure-entra
+    name: seqera_azure_entra
+    workdir: az://seqeralabs-showcase
+    workspace: "14715071736572"
