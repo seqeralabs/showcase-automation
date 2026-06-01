@@ -1,0 +1,5 @@
+compute-envs:
+  - ref: gcp-wif
+    name: seqera_gcp_batch_wif
+    workdir: gs://seqeralabs-showcase-eu-north-1
+    workspace: "14715071736572"
