@@ -10,3 +10,50 @@ exclude:
       name: seqera_aws_ireland_fusionv2_nvme
       workdir: s3://seqera-showcase/scratch/cicd
       workspace: ""
+  # Do not run any nf-core pipeline on azure_cloud compute environments.
+  # These exclusions should be lifted once COMP-1933 is delivered:
+  # https://seqera.atlassian.net/browse/COMP-1933
+  - pipeline:
+      name: rnaseq
+      url: nf-core-rnaseq
+      latest: true
+      profiles:
+        - test
+    compute_environment:
+      ref: azure-cloud
+      name: seqera_azure_cloud
+      workdir: az://seqeralabs-showcase
+      workspace: ""
+  - pipeline:
+      name: viralrecon-illumina
+      url: nf-core-viralrecon-illumina
+      latest: true
+      profiles:
+        - test
+    compute_environment:
+      ref: azure-cloud
+      name: seqera_azure_cloud
+      workdir: az://seqeralabs-showcase
+      workspace: ""
+  - pipeline:
+      name: viralrecon-nanopore
+      url: nf-core-viralrecon-nanopore
+      latest: true
+      profiles:
+        - test
+    compute_environment:
+      ref: azure-cloud
+      name: seqera_azure_cloud
+      workdir: az://seqeralabs-showcase
+      workspace: ""
+  - pipeline:
+      name: sarek
+      url: nf-core-sarek
+      latest: true
+      profiles:
+        - test
+    compute_environment:
+      ref: azure-cloud
+      name: seqera_azure_cloud
+      workdir: az://seqeralabs-showcase
+      workspace: ""
