@@ -138,12 +138,18 @@ class LaunchConfig(pydantic.BaseModel):
         )
         # It's never good to create a path with string handling but it's the quickest way here.
         workdir = "/".join(
-            [self.compute_environment.workdir, self.pipeline.name, "work-" + date]
+            [
+                self.compute_environment.workdir,
+                self.compute_environment.ref,
+                self.pipeline.name,
+                "work-" + date,
+            ]
         )
 
         outdir = "/".join(
             [
                 self.compute_environment.workdir,
+                self.compute_environment.ref,
                 self.pipeline.name,
                 "results-test-" + date,
             ]
