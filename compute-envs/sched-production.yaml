@@ -7,3 +7,7 @@ compute-envs:
     name: seqera_sched_gcp
     workdir: gs://jon-test-bucket/scratch/cicd
     workspace: "48548323160783"
+  - ref: sched-azure
+    name: seqera_sched_azure
+    workdir: az://seqeralabs-showcase/scratch/cicd
+    workspace: "48548323160783"
