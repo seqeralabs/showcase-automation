@@ -12,6 +12,36 @@ def load_yaml(relative_path: str) -> object:
 
 
 class DevEnvironmentConfigTest(unittest.TestCase):
+    def assert_dev_workspace_copy(
+        self, dev_path: str, staging_path: str
+    ) -> None:
+        expected = load_yaml(staging_path)
+        for compute_environment in expected["compute-envs"]:
+            compute_environment["workspace"] = "86340901303136"
+
+        self.assertTrue((ROOT / dev_path).is_file())
+        self.assertEqual(load_yaml(dev_path), expected)
+
+    def test_compute_environment_configs_match_staging_with_dev_workspace(
+        self,
+    ) -> None:
+        compute_env_dir = ROOT / "compute-envs"
+        staging_paths = sorted(compute_env_dir.glob("staging-*.yaml"))
+        self.assertEqual(len(staging_paths), 11)
+
+        for staging_path in staging_paths:
+            dev_name = staging_path.name.replace("staging-", "dev-", 1)
+            with self.subTest(dev_name=dev_name):
+                self.assert_dev_workspace_copy(
+                    f"compute-envs/{dev_name}",
+                    f"compute-envs/{staging_path.name}",
+                )
+
+        self.assert_dev_workspace_copy(
+            "compute-envs/sched-dev.yaml",
+            "compute-envs/sched-staging.yaml",
+        )
+
     def test_pipeline_configs_match_staging(self) -> None:
         path_pairs = {
             "pipelines/dev-hello.yaml": "pipelines/staging-hello.yaml",
