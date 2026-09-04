@@ -77,6 +77,31 @@ class DevEnvironmentConfigTest(unittest.TestCase):
                 self.assertTrue((ROOT / dev_path).is_file())
                 self.assertEqual(load_yaml(dev_path), load_yaml(staging_path))
 
+    def test_dev_workflow_matches_staging_with_approved_substitutions(
+        self,
+    ) -> None:
+        staging_workflow = (
+            ROOT / ".github/workflows/seqera-showcase-staging.yml"
+        ).read_text(encoding="utf-8")
+        dev_workflow_path = ROOT / ".github/workflows/seqera-showcase-dev.yml"
+
+        replacements = (
+            ("seqera-showcase-autotest-staging", "seqera-showcase-autotest-dev"),
+            ("Seqera Platform Staging", "Seqera Platform Dev"),
+            ("STAGING_TOWER_ACCESS_ENDPOINT", "DEV_TOWER_ACCESS_ENDPOINT"),
+            ("STAGING_TOWER_ACCESS_TOKEN", "DEV_TOWER_ACCESS_TOKEN"),
+            ("pipelines/staging*.yaml", "pipelines/dev*.yaml"),
+            ("compute-envs/staging*.yaml", "compute-envs/dev*.yaml"),
+            ("compute-envs/sched-staging*.yaml", "compute-envs/sched-dev*.yaml"),
+        )
+        expected = staging_workflow
+        for staging_value, dev_value in replacements:
+            self.assertIn(staging_value, expected)
+            expected = expected.replace(staging_value, dev_value)
+
+        self.assertTrue(dev_workflow_path.is_file())
+        self.assertEqual(dev_workflow_path.read_text(encoding="utf-8"), expected)
+
 
 if __name__ == "__main__":
     unittest.main()
