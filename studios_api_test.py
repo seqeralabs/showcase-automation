@@ -1,8 +1,8 @@
 import argparse
 import os
+
 import pydantic
 import requests
-from tabulate import tabulate
 
 
 class StudioStatus(pydantic.BaseModel):
@@ -214,7 +214,7 @@ def parse_args() -> argparse.Namespace:
 def get_headers() -> dict:
     access_token = os.getenv("TOWER_ACCESS_TOKEN")
     if not access_token:
-        raise EnvironmentError("TOWER_ACCESS_TOKEN environment variable not set.")
+        raise OSError("TOWER_ACCESS_TOKEN environment variable not set.")
     return {"Accept": "application/json", "Authorization": f"Bearer {access_token}"}
 
 

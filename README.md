@@ -4,6 +4,16 @@
 
 This repository contains automation scripts for launching and collecting information from pipelines in the Seqera Labs platform.
 
+## Development
+
+Install [`prek`](https://prek.j178.dev/) and enable the Git hook:
+
+```bash
+prek install
+```
+
+Run all style checks with `prek run --all-files`.
+
 ### `launch_pipelines.py`
 
 This script performs the following steps:
@@ -30,8 +40,6 @@ This script performs the following steps:
 - If `--force` is enabled, it removes the pipeline even if it has not finished or failed.
 
 ### `studios_api_test.py`
-
-This script performs the following steps:
 
 This script performs the following steps:
 

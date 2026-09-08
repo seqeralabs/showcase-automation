@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from typing import cast
-import unittest
 
 import yaml
 
@@ -16,9 +16,7 @@ def load_yaml(relative_path: str) -> dict[str, object]:
 
 
 class DevEnvironmentConfigTest(unittest.TestCase):
-    def assert_dev_workspace_copy(
-        self, dev_path: str, staging_path: str
-    ) -> None:
+    def assert_dev_workspace_copy(self, dev_path: str, staging_path: str) -> None:
         expected = load_yaml(staging_path)
         compute_environments = expected["compute-envs"]
         if not isinstance(compute_environments, list) or not all(
@@ -31,13 +29,15 @@ class DevEnvironmentConfigTest(unittest.TestCase):
 
         self.assertTrue((ROOT / dev_path).is_file())
         self.assertEqual(load_yaml(dev_path), expected)
-        expected_text = (ROOT / staging_path).read_text(encoding="utf-8").replace(
-            'workspace: "14715071736572"',
-            'workspace: "86340901303136"',
+        expected_text = (
+            (ROOT / staging_path)
+            .read_text(encoding="utf-8")
+            .replace(
+                'workspace: "14715071736572"',
+                'workspace: "86340901303136"',
+            )
         )
-        self.assertEqual(
-            (ROOT / dev_path).read_text(encoding="utf-8"), expected_text
-        )
+        self.assertEqual((ROOT / dev_path).read_text(encoding="utf-8"), expected_text)
 
     def test_compute_environment_configs_match_staging_with_dev_workspace(
         self,
