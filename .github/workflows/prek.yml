@@ -1,0 +1,15 @@
+name: Prek
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  prek:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7.0.1
+      - uses: j178/prek-action@e98a699c41eb69ab013a45817a0406469a748f8d # ratchet:j178/prek-action@v2.0.5
+        with:
+          prek-version: "0.4.5"

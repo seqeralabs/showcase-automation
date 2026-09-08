@@ -2,12 +2,12 @@ import argparse
 import datetime
 import json
 import logging
-import pydantic
 import tempfile
 import uuid
-import yaml
-
 from pathlib import Path
+
+import pydantic
+import yaml
 from seqerakit import seqeraplatform
 from seqerakit.helper import parse_launch_block
 
@@ -20,8 +20,6 @@ date = datetime.datetime.now().strftime("%Y%m%d")
 
 class SeqeraKitError(Exception):
     """Exception for failure to use Tower CLI."""
-
-    pass
 
 
 class Pipeline(pydantic.BaseModel):
@@ -104,9 +102,7 @@ class LaunchConfig(pydantic.BaseModel):
                     "name"
                 ) and self.compute_environment.model_dump().get(
                     "name"
-                ) == other.compute_environment.model_dump().get(
-                    "name"
-                )
+                ) == other.compute_environment.model_dump().get("name")
         else:
             return NotImplemented
 
@@ -361,7 +357,7 @@ def read_yaml(
             # We grab keys from pre-populated dict so we can do some key checking
             file_contents = yaml.safe_load(pipeline_file)
             for key in file_contents.keys():
-                if key in objects.keys():
+                if key in objects:
                     objects[key] = objects[key] + file_contents[key]
                 else:
                     raise KeyError(f"Unexpected key in YAML file: {key}")
