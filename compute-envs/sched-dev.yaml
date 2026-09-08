@@ -1,0 +1,9 @@
+compute-envs:
+  - ref: sched-aws
+    name: seqera_sched_aws
+    workdir: s3://seqera-showcase/scratch/cicd
+    workspace: "86340901303136"
+  - ref: sched-azure
+    name: seqera_sched_azure
+    workdir: az://seqeralabs-showcase/scratch/cicd
+    workspace: "86340901303136"
