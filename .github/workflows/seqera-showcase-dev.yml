@@ -129,7 +129,6 @@ jobs:
             -i \
             pipelines/dev*.yaml \
             compute-envs/dev*.yaml \
-            compute-envs/sched-dev*.yaml \
             exclude/* \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.pre_run != '') && format('--pre_run "{0}"', inputs.pre_run) || ''}} \
             ${{ (github.event_name == 'workflow_dispatch' && inputs.config != '') && format('--config "{0}"', inputs.config) || '' }} \

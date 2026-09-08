@@ -92,12 +92,17 @@ class DevEnvironmentConfigTest(unittest.TestCase):
             ("STAGING_TOWER_ACCESS_TOKEN", "DEV_TOWER_ACCESS_TOKEN"),
             ("pipelines/staging*.yaml", "pipelines/dev*.yaml"),
             ("compute-envs/staging*.yaml", "compute-envs/dev*.yaml"),
-            ("compute-envs/sched-staging*.yaml", "compute-envs/sched-dev*.yaml"),
         )
         expected = staging_workflow
         for staging_value, dev_value in replacements:
             self.assertIn(staging_value, expected)
             expected = expected.replace(staging_value, dev_value)
+
+        # The scheduled compute environments are not launched in dev yet, so
+        # the dev workflow drops the sched glob entirely.
+        sched_line = "            compute-envs/sched-staging*.yaml \\\n"
+        self.assertIn(sched_line, expected)
+        expected = expected.replace(sched_line, "")
 
         self.assertTrue(dev_workflow_path.is_file())
         self.assertEqual(dev_workflow_path.read_text(encoding="utf-8"), expected)
