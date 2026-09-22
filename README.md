@@ -4,6 +4,9 @@
 
 This repository contains automation scripts for launching and collecting information from pipelines in the Seqera Labs platform.
 
+Install the locked dependencies with `uv sync --locked`, then run scripts with
+`uv run --locked python <script>.py`.
+
 ### `launch_pipelines.py`
 
 This script performs the following steps:

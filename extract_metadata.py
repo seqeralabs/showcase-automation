@@ -6,10 +6,10 @@ the workspace, workflow ID, and output path for the resulting JSON.
 
 The script relies on the seqerakit package to interact with the CLI using Python and must
 be run in an environment where this package is installed and properly configured. To install,
-run `pip install seqerakit` in your environment.
+run `uv sync --locked` in this repository.
 
 Usage:
-    python extract_metadata.py -w <workspace_name> -o <output_file.json> -id <workflow_id> <workflow_id> ...
+    uv run --locked python extract_metadata.py -w <workspace_name> -o <output_file.json> -id <workflow_id> <workflow_id> ...
 
 Arguments:
     -w, --workspace     The name of the workspace on the Seqera Platform.
@@ -20,7 +20,7 @@ Arguments:
     -f, --force         Force delete workflow even if it did not finish successfully
 
 Example:
-    python extract_metadata.py -w myworkspace -id 12345 -o workflow_details.json
+    uv run --locked python extract_metadata.py -w myworkspace -id 12345 -o workflow_details.json
 
 Note: Ensure that the `TOWER_ACCESS_TOKEN` has been set in your environment before running the script.
 """

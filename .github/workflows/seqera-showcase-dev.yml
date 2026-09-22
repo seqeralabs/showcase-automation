@@ -100,15 +100,10 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # ratchet:actions/checkout@v6.0.2
 
-      - name: setup python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # ratchet:actions/setup-python@v6.2.0
+      - name: setup uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # ratchet:astral-sh/setup-uv@v10.0.1
         with:
           python-version: "3.14"
-          cache: "pip"
-
-      - name: install dependencies
-        run: |
-          pip install -r requirements.txt
 
       - name: install tw cli
         run: |
@@ -124,7 +119,7 @@ jobs:
 
       - name: launch_pipelines
         run: |
-          python launch_pipelines.py \
+          uv run --locked python launch_pipelines.py \
             -l DEBUG \
             -i \
             pipelines/dev*.yaml \
@@ -170,19 +165,14 @@ jobs:
         run: |
           tw --version
 
-      - name: setup python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # ratchet:actions/setup-python@v6.2.0
+      - name: setup uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # ratchet:astral-sh/setup-uv@v10.0.1
         with:
           python-version: "3.14"
-          cache: "pip"
-
-      - name: install dependencies
-        run: |
-          pip install -r requirements.txt
 
       - name: finish workflow
         run: |
-          python extract_metadata.py \
+          uv run --locked python extract_metadata.py \
             -l DEBUG \
             -o ${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}_workflow_data.json \
             -i run_details/* \
