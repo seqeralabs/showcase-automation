@@ -218,9 +218,9 @@ class SpecTest(unittest.TestCase):
         self.assertEqual(len(specs), 1)
         self.assertEqual(specs[0].workspace, "14715071736572")
         self.assertEqual(specs[0].compute_env, "seqera_aws_cloud")
-        self.assertTrue(
-            specs[0].template.startswith("public.cr.seqera.io/platform/data-studio-")
-        )
+        self.assertIn("data-studio-jupyter", specs[0].template)
+        # Unpinned on purpose so the newest recommended template is resolved at run time.
+        self.assertIsNone(sa.split_template(specs[0].template)[1])
         self.assertIsNotNone(specs[0].lifespan)
 
     def test_read_yaml_rejects_unknown_key(self) -> None:

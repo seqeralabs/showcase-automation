@@ -135,7 +135,7 @@ Each entry in the YAML must specify a Studio to create on an existing compute en
 - `name` (string): Base name of the Studio. The date and a run UUID are appended to make it unique.
 - `workspace` (string): The ID of the workspace the compute environment belongs to.
 - `compute_env` (string): The name of the compute environment in the Seqera platform. Studios support AWS Cloud, Azure Cloud, Google Cloud and AWS Batch (without Fargate) compute environments.
-- `template` (string): Template image, e.g. `public.cr.seqera.io/platform/data-studio-jupyter:4.6.0-0.12`. Omit the tag to use the newest `recommended` template available in the workspace.
+- `template` (string): Template image, e.g. `cr.seqera.io/public/data-studio-jupyter:4.6.0-0.12`. Omit the tag to use the newest `recommended` template available in the workspace. The registry path depends on the environment; when nothing matches, the launch error lists the repositories the workspace offers.
 - `description` (string, optional): Studio description. A link to the GitHub Actions run is appended when available.
 - `cpu`, `memory`, `gpu` (int, optional): Resources allocated to the session. Default to 2 CPUs, 8192 MiB and 0 GPUs.
 - `lifespan` (int, optional): Hours after which the Platform stops the session on its own. Acts as a safety net if the cleanup job never runs, so keep it longer than the soak period.
@@ -150,7 +150,7 @@ studios:
     name: jupyter
     workspace: "14715071736572"
     compute_env: seqera_aws_cloud
-    template: public.cr.seqera.io/platform/data-studio-jupyter
+    template: cr.seqera.io/public/data-studio-jupyter
     cpu: 2
     memory: 8192
     gpu: 0
