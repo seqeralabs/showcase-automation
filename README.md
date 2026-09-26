@@ -36,11 +36,31 @@ This script performs the following steps:
 
 This script performs the following steps:
 
-This script performs the following steps:
-
 - Queries the Seqera Platform API to retrieve information about Data Studios in selected workspaces (`--workspaces`)
 - Can filter by workspace IDs and status
 - Supports sending results to Slack
+
+### `studios_autotest.py`
+
+This script creates, soak-tests, stops and deletes Studios. It has two sub-commands that mirror
+`launch_pipelines.py` and `extract_metadata.py`, and drives Studios through the `tw` CLI.
+
+`launch`:
+
+- Reads Studio definitions from YAML files in [`./studios/`](./studios/).
+- Resolves an unpinned template (repository without a tag) to the newest `recommended` template available in the workspace.
+- Creates one Studio per definition with a unique name, auto-starts it and waits until it is `running` (`--startup-timeout`, default 30 minutes).
+- Logs any failure to create or start a Studio without causing the program to fail.
+- Writes all launch records to a JSON file for the `finish` step.
+
+`finish`:
+
+- Reads the launch records written by `launch`.
+- Checks each Studio is still `running` after the soak period, then stops it and waits until it is `stopped` (`--stop-timeout`, default 20 minutes).
+- If `--delete` is enabled, deletes the Studio once it is `stopped` (or `errored`). If `--force` is enabled, attempts the deletion whatever the status.
+- Classifies each Studio as `PASSED`, `FAILED_TO_CREATE`, `FAILED_TO_START`, `FAILED_SOAK` or `FAILED_TO_STOP`.
+- Writes a results table to the GitHub Actions job summary when run in Actions. Slack notifications are left out until the workflow is confirmed to work.
+- If `--fail-on-error` is enabled, exits with a non-zero code when any Studio did not pass.
 
 ### Input YAML Files
 
@@ -107,6 +127,36 @@ compute-envs:
 
 **Note on Profile Mappings**: Profile mappings are useful when different pipelines require different profiles on the same compute environment. For example, some pipelines may not include certain profiles in their `nextflow.config`, and Nextflow 24.05+ will fail if you try to use a non-existent profile. Use profile mappings to conditionally apply profiles only to pipelines that support them.
 
+#### `studios`
+
+Each entry in the YAML must specify a Studio to create on an existing compute environment, with the following fields:
+
+- `ref` (string): User-readable name of the compute environment, used in the Studio name.
+- `name` (string): Base name of the Studio. The date and a run UUID are appended to make it unique.
+- `workspace` (string): The ID of the workspace the compute environment belongs to.
+- `compute_env` (string): The name of the compute environment in the Seqera platform. Studios support AWS Cloud, Azure Cloud, Google Cloud and AWS Batch (without Fargate) compute environments.
+- `template` (string): Template image, e.g. `cr.seqera.io/public/data-studio-jupyter:4.6.0-0.12`. Omit the tag to use the newest `recommended` template available in the workspace. The registry path depends on the environment; when nothing matches, the launch error lists the repositories the workspace offers.
+- `description` (string, optional): Studio description. A link to the GitHub Actions run is appended when available.
+- `cpu`, `memory`, `gpu` (int, optional): Resources allocated to the session. Default to 2 CPUs, 8192 MiB and 0 GPUs.
+- `lifespan` (int, optional): Hours after which the Platform stops the session on its own. Acts as a safety net if the cleanup job never runs, so keep it longer than the soak period.
+- `mount_data_uris` (List of strings, optional): Data-link URIs to mount, e.g. `s3://seqera-showcase`.
+- `private` (bool, optional): Create a private Studio. Defaults to `false`.
+
+Example:
+
+```yaml
+studios:
+  - ref: aws-cloud
+    name: jupyter
+    workspace: "14715071736572"
+    compute_env: seqera_aws_cloud
+    template: cr.seqera.io/public/data-studio-jupyter
+    cpu: 2
+    memory: 8192
+    gpu: 0
+    lifespan: 2
+```
+
 #### `include`
 
 This file is made of a list of complete configurations, each containing a pipeline and compute environment that match the above files.
@@ -135,3 +185,5 @@ This file removes pipeline and compute environment combinations. It has the same
 ### Automated Running
 
 An implementation of these two steps in GitHub Actions is included in [./.github/workflows/seqera-showcase.yml](./.github/workflows/seqera-showcase.yml). In this workflow, the first job (`launch`) launches the pipelines, and the subsequent job (`clearup-and-delete`) runs the second process after a pre-defined wait period, implemented via a [GitHub Deployment Environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment). It uses a GitHub Action artifact to transfer the JSON file between jobs.
+
+The same two-job pattern is used for Studios in [./.github/workflows/seqera-showcase-studios-staging.yml](./.github/workflows/seqera-showcase-studios-staging.yml). The `launch` job creates the Studios declared in `studios/staging*.yaml` and waits until they are running; the `soak-stop-and-delete` job always runs after the soak period selected with the `timer` input, stops and deletes the Studios, writes the results table to the job summary and fails the run if any Studio did not pass.

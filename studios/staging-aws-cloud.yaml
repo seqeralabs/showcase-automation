@@ -1,0 +1,25 @@
+# Studios created by the seqera-showcase-autotest-studios-staging workflow.
+# One Studio is created per entry, started, kept running for the soak period,
+# then stopped and deleted. Same staging workspace and AWS Cloud compute
+# environment as compute-envs/staging-aws-cloud.yaml.
+studios:
+  - ref: aws-cloud
+    name: jupyter
+    workspace: "14715071736572"
+    compute_env: seqera_aws_cloud
+    # Repository without a tag: the newest "recommended" template available in
+    # the workspace is resolved at run time. Pin a tag to test a specific version.
+    # The registry path depends on the environment: staging serves its templates
+    # from cr.seqera.io/public/..., the public docs show public.cr.seqera.io/platform/....
+    # When nothing matches, the launch error lists the repositories the workspace offers.
+    template: cr.seqera.io/public/data-studio-jupyter
+    description: Automated Studio test created by showcase-automation (safe to delete)
+    cpu: 2
+    memory: 8192
+    gpu: 0
+    # Safety net in hours: the Platform stops the session on its own if the
+    # cleanup job never runs. Keep it longer than the soak timer of the workflow.
+    lifespan: 2
+    # Optional data-links to mount, e.g. ["s3://seqera-showcase"]
+    mount_data_uris: []
+    private: false
