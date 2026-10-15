@@ -52,6 +52,29 @@ class ComputeEnvironment(pydantic.BaseModel):
     workspace: str
     profiles: list[str] = []
     profile_mappings: list[ProfileMapping] = []
+    # Whether the compute environment runs tasks with Docker inside the launcher
+    # container (e.g. cloud and sched compute environments)
+    dind: bool = False
+
+    def get_launch_container(
+        self, launch_container: str | None, launch_container_dind: str | None
+    ) -> str | None:
+        """
+        Get the launch container for this compute environment.
+
+        Compute environments flagged as 'dind' use the dind launch container, when given,
+        all others use the plain launch container.
+
+        Args:
+            launch_container (str, optional): The plain launch container.
+            launch_container_dind (str, optional): The launch container including the Docker client.
+
+        Returns:
+            str | None: The launch container to use, or None for the Platform default.
+        """
+        if self.dind and launch_container_dind is not None:
+            return launch_container_dind
+        return launch_container
 
     def get_profiles_for_pipeline(self, pipeline_name: str) -> list[str]:
         """
@@ -117,6 +140,7 @@ class LaunchConfig(pydantic.BaseModel):
         launch_container=None,
         labels: str | None = None,
         disable_optimization: bool = False,
+        launch_container_dind=None,
     ) -> dict[str, str | bool | None]:
         """
         Launch a pipeline.
@@ -125,6 +149,7 @@ class LaunchConfig(pydantic.BaseModel):
             seqera (seqeraplatform.SeqeraPlatform): A SeqeraPlatform object.
             wait (str, optional): The wait status for the pipeline. Defaults to "SUBMITTED".
             launch_container (str, optional): The container to launch the pipeline in. Defaults to None.
+            launch_container_dind (str, optional): The container to launch the pipeline in on 'dind' compute environments. Defaults to None.
 
         Raises:
             SeqeraKitError: If the pipeline fails to launch.
@@ -207,6 +232,9 @@ class LaunchConfig(pydantic.BaseModel):
         if labels is not None:
             args_dict.update({"labels": labels})
 
+        launch_container = self.compute_environment.get_launch_container(
+            launch_container, launch_container_dind
+        )
         if launch_container is not None:
             args_dict.update({"launch-container": launch_container})
 
@@ -317,6 +345,12 @@ def parse_args() -> argparse.Namespace:
         "--launch-container",
         type=str,
         help="Container to use for the pipeline.",
+        required=False,
+    )
+    parser.add_argument(
+        "--launch-container-dind",
+        type=str,
+        help="Container to use for the pipeline on compute environments flagged as 'dind'.",
         required=False,
     )
     parser.add_argument(
@@ -457,6 +491,7 @@ def launch_pipelines(
     launch_container: str | None = None,
     labels: str | None = None,
     disable_optimization: bool = False,
+    launch_container_dind: str | None = None,
 ) -> list[dict[str, str | bool | None]]:
     """
     Launch a list of pipelines.
@@ -467,6 +502,7 @@ def launch_pipelines(
         launch_container (str, optional): The container to launch the pipeline in. Defaults to None.
         labels (str, optional): Labels to add to the pipeline. Defaults to None.
         disable_optimization (bool, optional): Disable optimizations. Defaults to False.
+        launch_container_dind (str, optional): The container to launch the pipeline in on 'dind' compute environments. Defaults to None.
 
     Returns:
         list[dict[str, str]]: A list of launched pipelines.
@@ -478,6 +514,7 @@ def launch_pipelines(
             launch_container=launch_container,
             labels=labels,
             disable_optimization=disable_optimization,
+            launch_container_dind=launch_container_dind,
         )
         for launch_config in launch_configs
     ]
@@ -499,6 +536,7 @@ def main() -> None:
         args.launch_container,
         args.labels,
         args.disable_optimization,
+        args.launch_container_dind,
     )
 
     logging.info(f"Writing launches to JSON file {args.output}")

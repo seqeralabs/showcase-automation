@@ -3,3 +3,4 @@ compute-envs:
     name: seqera_aws_cloud
     workdir: s3://scidev-eu-west-2
     workspace: "80631102134985"
+    dind: true

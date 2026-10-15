@@ -3,3 +3,4 @@ compute-envs:
     name: seqera_aws_cloud
     workdir: s3://seqera-showcase/scratch/cicd
     workspace: "86340901303136"
+    dind: true
