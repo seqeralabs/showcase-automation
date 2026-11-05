@@ -162,14 +162,22 @@ class LaunchConfig(pydantic.BaseModel):
             [self.pipeline.name, self.compute_environment.ref, date, workflow_uuid]
         )
         # It's never good to create a path with string handling but it's the quickest way here.
+        # Include the compute environment ref so compute environments sharing a bucket
+        # don't write to the same work and results directories.
         workdir = "/".join(
-            [self.compute_environment.workdir, self.pipeline.name, "work-" + date]
+            [
+                self.compute_environment.workdir,
+                self.pipeline.name,
+                self.compute_environment.ref,
+                "work-" + date,
+            ]
         )
 
         outdir = "/".join(
             [
                 self.compute_environment.workdir,
                 self.pipeline.name,
+                self.compute_environment.ref,
                 "results-test-" + date,
             ]
         )
