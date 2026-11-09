@@ -8,6 +8,7 @@ import uuid
 import yaml
 
 from pathlib import Path
+from launch_evidence import LaunchEvidence
 from seqerakit import seqeraplatform
 from seqerakit.helper import parse_launch_block
 
@@ -112,6 +113,13 @@ class LaunchConfig(pydantic.BaseModel):
     pipeline: "Pipeline"
     compute_environment: "ComputeEnvironment"
 
+    @property
+    def workflow_name(self) -> str:
+        """The requested name, also retained for reconciling a lost launch response."""
+        return "_".join(
+            [self.pipeline.name, self.compute_environment.ref, date, workflow_uuid]
+        )
+
     def __eq__(self, other, strict: bool = False) -> bool:
         # Check classes make sense
         if other.__class__ is self.__class__:
@@ -158,9 +166,7 @@ class LaunchConfig(pydantic.BaseModel):
             dict[str, str]: The launched pipeline.
         """
         # Pre-create some variables to make things easier.
-        run_name = "_".join(
-            [self.pipeline.name, self.compute_environment.ref, date, workflow_uuid]
-        )
+        run_name = self.workflow_name
         # It's never good to create a path with string handling but it's the quickest way here.
         # Include the compute environment ref so compute environments sharing a bucket
         # don't write to the same work and results directories.
@@ -322,6 +328,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "-o", "--output", type=str, required=True, help="Output filename for JSON file."
+    )
+    parser.add_argument(
+        "--evidence-output",
+        type=Path,
+        help="Optional versioned launch evidence sidecar, checkpointed before each launch.",
+    )
+    parser.add_argument(
+        "--evidence-environment",
+        type=str,
+        help="Environment label for the evidence sidecar (for example, production).",
     )
     parser.add_argument(
         "-i",
@@ -500,6 +516,7 @@ def launch_pipelines(
     labels: str | None = None,
     disable_optimization: bool = False,
     launch_container_dind: str | None = None,
+    evidence: LaunchEvidence | None = None,
 ) -> list[dict[str, str | bool | None]]:
     """
     Launch a list of pipelines.
@@ -516,16 +533,22 @@ def launch_pipelines(
         list[dict[str, str]]: A list of launched pipelines.
     """
     logging.info("Launching pipelines.")
-    launched_pipelines = [
-        launch_config.launch_pipeline(
+    launched_pipelines = []
+    for index, launch_config in enumerate(launch_configs):
+        if evidence is not None:
+            evidence.start(index)
+        receipt = launch_config.launch_pipeline(
             seqera=seqera,
             launch_container=launch_container,
             labels=labels,
             disable_optimization=disable_optimization,
             launch_container_dind=launch_container_dind,
         )
-        for launch_config in launch_configs
-    ]
+        launched_pipelines.append(receipt)
+        if evidence is not None:
+            evidence.record(index, receipt)
+    if evidence is not None:
+        evidence.finish()
     logging.info("Pipelines launched.")
     return launched_pipelines
 
@@ -538,6 +561,21 @@ def main() -> None:
 
     complete_launch_configs = read_yaml(args.inputs, args.pre_run, args.config)
 
+    evidence = None
+    if args.evidence_output is not None:
+        if args.evidence_output.resolve() == Path(args.output).resolve():
+            raise ValueError("Evidence and legacy receipt outputs must be separate files")
+        evidence = LaunchEvidence(
+            args.evidence_output,
+            complete_launch_configs,
+            environment=args.evidence_environment,
+            dryrun=args.dryrun,
+            launch_container=args.launch_container,
+            launch_container_dind=args.launch_container_dind,
+            labels=args.labels,
+            disable_optimization=args.disable_optimization,
+        )
+
     launched_pipelines = launch_pipelines(
         seqera,
         complete_launch_configs,
@@ -545,6 +583,7 @@ def main() -> None:
         args.labels,
         args.disable_optimization,
         args.launch_container_dind,
+        evidence=evidence,
     )
 
     logging.info(f"Writing launches to JSON file {args.output}")
