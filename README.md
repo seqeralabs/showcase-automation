@@ -135,3 +135,59 @@ This file removes pipeline and compute environment combinations. It has the same
 ### Automated Running
 
 An implementation of these two steps in GitHub Actions is included in [./.github/workflows/seqera-showcase.yml](./.github/workflows/seqera-showcase.yml). In this workflow, the first job (`launch`) launches the pipelines, and the subsequent job (`clearup-and-delete`) runs the second process after a pre-defined wait period, implemented via a [GitHub Deployment Environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment). It uses a GitHub Action artifact to transfer the JSON file between jobs.
+
+### Launch coverage evidence (schema version 1)
+
+`launch_pipelines.py --evidence-output launch_evidence.json
+--evidence-environment production` optionally writes a separate JSON sidecar.
+The production workflow retains it as
+`<run_id>_<run_number>_<run_attempt>_launch_evidence`, including when the launch
+step fails. It is deliberately separate from the legacy `_launch_json` artifact,
+which remains the collector's input. Other workflows can opt in later.
+
+The sidecar records the resolved expected matrix **before the first launch**,
+then atomically checkpoints immediately before and after each launch. It contains:
+
+- `schema_version: 1` and `kind: showcase-launch-evidence`.
+- `source`: GitHub repository, source SHA, workflow ref, run ID, attempt, run
+  number, event and job. Missing local-run metadata is `null`, never guessed.
+- An environment label, UTC creation/update times, dry-run flag, and
+  `launch_phase_complete` indicating only that the launch loop returned.
+- Each expected case's pipeline variant name/sanitized source URL, requested revision, resolved
+  profiles, compute environment ref/name/workspace, requested launcher image,
+  and SHA-256 identity of the resolved configuration and launch options. Config
+  text, pre-run scripts, labels, raw CLI errors and arbitrary environment variables
+  are not copied. URL userinfo, query strings and fragments are removed; malformed
+  URLs are recorded as `null`. A case ID combines its 1-based matrix ordinal with the digest,
+  so duplicate matrix entries remain distinct.
+- The requested workflow name for reconciling lost responses, per-case
+  start/receipt times, and selected receipt fields (`workflowId`, `workflowName`,
+  `workspaceId`, `workspaceRef`, `launchSuccess`). The legacy output is unchanged.
+- `coverage`: expected count and counts for all four launch states below.
+
+Launch states have deliberately limited meaning:
+
+- `not_attempted`: the launcher has not reached this case.
+- `outcome_unknown`: the launch was about to be attempted, or no usable receipt
+  was returned. This also covers legacy `launchSuccess: false` receipts because
+  generic CLI/wait errors can occur after submission. A crash or lost response
+  can leave a run on Platform, so reconcile before retrying.
+- `submitted`: the launcher returned success with a workflow ID. The pipeline
+  may still fail or be running.
+- `dry_run`: no live submission was requested.
+
+`pipeline_health` is always `not_assessed`, including with zero cases or a
+completed launch loop. Consumers must verify source identity against GitHub and
+join this inventory to collected child outcomes before making a health claim.
+Missing evidence, unknown outcomes and unfinished children cannot mean all clear.
+This increment does not collect task diagnostics, confirm cleanup, correlate the
+parent Nextflow run, trigger an agent, publish a brief, or propose a repair.
+Collector resilience remains tracked separately in PR #71; cleanup policy is
+unchanged from PR #118. A hard runner failure can prevent artifact upload, and
+input/setup failures before matrix resolution produce no manifest.
+
+Run the credential-free regression suite with:
+
+```bash
+uv run --locked python -m unittest discover -s tests -v
+```
